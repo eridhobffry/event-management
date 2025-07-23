@@ -60,21 +60,56 @@ export default function Home() {
               </Button>
             </CardContent>
           </Card>
-        </div>
 
-        <div className="mt-12 text-center">
-          <h2 className="text-2xl font-semibold mb-6">Authentication Test</h2>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Button asChild>
-              <Link href="/handler/sign-in">Sign In</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/handler/sign-up">Sign Up</Link>
-            </Button>
-            <Button asChild variant="secondary">
-              <Link href="/handler/account-settings">Account Settings</Link>
-            </Button>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>🔑 Admin</CardTitle>
+              <CardDescription>
+                Manage events, users, and settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/dashboard/users">
+                <Button className="w-full">Go to Dashboard</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>🔒 Auth</CardTitle>
+              <CardDescription>View event performance metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full">
+                <Link href="/handler/sign-in">Sign In</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>🔒 Auth</CardTitle>
+              <CardDescription>View event performance metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline">
+                <Link href="/handler/sign-up">Sign Up</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>🔒 Auth</CardTitle>
+              <CardDescription>View event performance metrics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="secondary">
+                <Link href="/handler/account-settings">Account Settings</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
