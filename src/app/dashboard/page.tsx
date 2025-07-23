@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { DataTable } from "@/components/data-table";
@@ -5,10 +7,29 @@ import { SectionCards } from "@/components/section-cards";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { db } from "@/lib/db";
-import { users } from "@/db/schema";
+import { users, userRoles, roles } from "@/db/schema";
 import { columns } from "./columns";
+import { stackServerApp } from "@/stack";
 
 export default async function Page() {
+  const user = await stackServerApp.getUser();
+
+  if (!user) {
+    redirect("/handler/sign-in");
+  }
+
+  const userRoleData = await db
+    .select({ roleName: roles.name })
+    .from(userRoles)
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(eq(userRoles.userId, user.id));
+
+  const isAdmin = userRoleData.some((r) => r.roleName === "Admin");
+
+  if (!isAdmin) {
+    redirect("/");
+  }
+
   const data = await db.select().from(users);
 
   return (
