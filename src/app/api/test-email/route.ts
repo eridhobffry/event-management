@@ -5,7 +5,7 @@ export async function GET() {
     console.log("🧪 Testing email functionality...");
 
     const result = await sendEmail({
-      to: "eridhobffry@yahoo.com", // Your verified email
+      to: "malsanirmala@gmail.com",
       subject: "Test Email from Event Management",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

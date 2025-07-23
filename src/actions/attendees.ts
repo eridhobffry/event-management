@@ -80,14 +80,7 @@ export async function registerAttendee(values: z.infer<typeof schema>) {
     const errorMessage =
       emailError instanceof Error ? emailError.message : String(emailError);
     if (errorMessage.includes("You can only send testing emails")) {
-      console.log(
-        "🔔 Development mode: Email would be sent to",
-        email,
-        "in production"
-      );
-      console.log(
-        "📧 To test emails in development, add recipient to Resend dashboard or verify a domain"
-      );
+      console.error("❌ Failed to send confirmation email:", emailError);
     } else {
       console.error("❌ Failed to send confirmation email:", emailError);
     }

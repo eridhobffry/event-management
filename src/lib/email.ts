@@ -1,6 +1,10 @@
-import { Resend } from "resend";
+import * as brevo from "@getbrevo/brevo";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(
+  brevo.TransactionalEmailsApiApiKeys.apiKey,
+  process.env.BREVO_API_KEY!
+);
 
 export const sendEmail = async ({
   to,
@@ -12,18 +16,20 @@ export const sendEmail = async ({
   html: string;
 }) => {
   try {
-    console.log("🔥 Attempting to send email to:", to);
-    console.log(
-      "🔥 Using Resend API Key:",
-      process.env.RESEND_API_KEY ? "✅ Present" : "❌ Missing"
-    );
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = {
+      name: "Event Management Hub",
+      email: "eridhobffry@googlemail.com",
+    };
+    sendSmtpEmail.to = [
+      {
+        email: to,
+      },
+    ];
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = html;
 
-    const result = await resend.emails.send({
-      from: "Event Management <noreply@resend.dev>", // Use resend.dev domain for testing
-      to,
-      subject,
-      html,
-    });
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
     console.log("✅ Email sent successfully:", result);
     return result;
