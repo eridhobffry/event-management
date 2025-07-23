@@ -14,13 +14,14 @@ const formSchema = z.object({
   description: z.string().optional(),
   date: z.date(),
   location: z.string().optional(),
+  expectations: z.string().optional(),
 });
 
 export async function createEvent(values: z.infer<typeof formSchema>) {
   const user = await stackServerApp.getUser();
 
   if (!user) {
-    throw new Error("You must be logged in to create an event.");
+    redirect("/handler/sign-in");
   }
 
   const validatedFields = formSchema.safeParse(values);
@@ -32,7 +33,15 @@ export async function createEvent(values: z.infer<typeof formSchema>) {
     };
   }
 
-  const { name, description, date, location } = validatedFields.data;
+  const { name, description, date, location, expectations } =
+    validatedFields.data;
+
+  const expectationsArray = expectations
+    ? expectations
+        .split("\n")
+        .map((e) => e.trim())
+        .filter(Boolean)
+    : [];
 
   try {
     await db.insert(events).values({
@@ -40,6 +49,7 @@ export async function createEvent(values: z.infer<typeof formSchema>) {
       description,
       date,
       location,
+      expectations: expectationsArray,
       createdBy: user.id,
     });
   } catch (error) {
@@ -59,7 +69,7 @@ export async function updateEvent(
   const user = await stackServerApp.getUser();
 
   if (!user) {
-    throw new Error("You must be logged in to update an event.");
+    redirect("/handler/sign-in");
   }
 
   const validatedFields = formSchema.safeParse(values);
@@ -71,7 +81,15 @@ export async function updateEvent(
     };
   }
 
-  const { name, description, date, location } = validatedFields.data;
+  const { name, description, date, location, expectations } =
+    validatedFields.data;
+
+  const expectationsArray = expectations
+    ? expectations
+        .split("\n")
+        .map((e) => e.trim())
+        .filter(Boolean)
+    : [];
 
   try {
     await db
@@ -81,6 +99,7 @@ export async function updateEvent(
         description,
         date,
         location,
+        expectations: expectationsArray,
       })
       .where(eq(events.id, id));
   } catch (error) {

@@ -35,6 +35,7 @@ const formSchema = z.object({
     message: "A date is required.",
   }),
   location: z.string().optional(),
+  expectations: z.string().optional(),
 });
 
 export default function CreateEventPage() {
@@ -46,6 +47,7 @@ export default function CreateEventPage() {
       name: "",
       description: "",
       location: "",
+      expectations: "",
     },
   });
 
@@ -144,6 +146,23 @@ export default function CreateEventPage() {
                 <FormLabel>Location</FormLabel>
                 <FormControl>
                   <Input placeholder="Central Park, New York" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="expectations"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>What to Expect (one item per line)</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder={"Networking opportunities\nExpert talks"}
+                    className="resize-none"
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

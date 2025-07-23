@@ -1,18 +1,7 @@
-import {
-  Calendar,
-  MapPin,
-  Users,
-  ArrowLeft,
-  Clock,
-  Mail,
-  User,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, MapPin, Users, ArrowLeft, Clock, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import RegisterForm from "./register-form";
 import { db } from "@/lib/db";
 import { events } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -159,22 +148,15 @@ export default async function EventRegistrationPage({
                     What to Expect
                   </h3>
                   <ul className="text-sm text-zinc-300 space-y-2">
-                    <li className="flex items-start">
-                      <span className="text-indigo-400 mr-2">•</span>
-                      Networking opportunities with industry professionals
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-violet-400 mr-2">•</span>
-                      Valuable insights and learning sessions
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-purple-400 mr-2">•</span>
-                      Refreshments and interactive activities
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-emerald-400 mr-2">•</span>
-                      Digital certificate of attendance
-                    </li>
+                    {(Array.isArray(event.expectations)
+                      ? (event.expectations as string[])
+                      : []
+                    ).map((item, idx) => (
+                      <li key={idx} className="flex items-start">
+                        <span className="text-indigo-400 mr-2">•</span>
+                        {item}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               </CardContent>
@@ -194,92 +176,7 @@ export default async function EventRegistrationPage({
               </CardHeader>
 
               <CardContent>
-                <form className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName" className="text-zinc-200">
-                        First Name *
-                      </Label>
-                      <Input
-                        id="firstName"
-                        placeholder="Enter your first name"
-                        className="bg-white/5 border-white/10 text-white placeholder:text-zinc-500 focus:border-indigo-500/50 focus:bg-white/10"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-zinc-200">
-                        Last Name *
-                      </Label>
-                      <Input
-                        id="lastName"
-                        placeholder="Enter your last name"
-                        className="bg-white/5 border-white/10 text-white placeholder:text-zinc-500 focus:border-indigo-500/50 focus:bg-white/10"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-zinc-200">
-                      Email Address *
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email address"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-zinc-500 focus:border-indigo-500/50 focus:bg-white/10"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-zinc-200">
-                      Phone Number
-                    </Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="Enter your phone number"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-zinc-500 focus:border-indigo-500/50 focus:bg-white/10"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="organization" className="text-zinc-200">
-                      Organization/Company
-                    </Label>
-                    <Input
-                      id="organization"
-                      placeholder="Enter your organization"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-zinc-500 focus:border-indigo-500/50 focus:bg-white/10"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dietary" className="text-zinc-200">
-                      Dietary Requirements
-                    </Label>
-                    <Textarea
-                      id="dietary"
-                      placeholder="Any dietary restrictions or special requirements"
-                      rows={3}
-                      className="bg-white/5 border-white/10 text-white placeholder:text-zinc-500 focus:border-indigo-500/50 focus:bg-white/10 resize-none"
-                    />
-                  </div>
-
-                  <div className="pt-4">
-                    <Button className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-0 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200 h-12">
-                      <User className="w-5 h-5 mr-2" />
-                      Complete Registration
-                    </Button>
-                  </div>
-
-                  <p className="text-xs text-zinc-500 text-center">
-                    By registering, you agree to receive event updates and
-                    communications.
-                  </p>
-                </form>
+                <RegisterForm eventId={event.id} />
               </CardContent>
             </Card>
 

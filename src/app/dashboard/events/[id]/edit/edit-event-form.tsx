@@ -36,6 +36,7 @@ const formSchema = z.object({
     message: "A date is required.",
   }),
   location: z.string().optional(),
+  expectations: z.string().optional(),
 });
 
 type Event = typeof events.$inferSelect;
@@ -55,6 +56,9 @@ export function EditEventForm({ initialData, eventId }: EditEventFormProps) {
       description: initialData.description || "",
       date: initialData.date ? new Date(initialData.date) : undefined,
       location: initialData.location || "",
+      expectations: Array.isArray(initialData.expectations)
+        ? (initialData.expectations as string[]).join("\n")
+        : "",
     },
   });
 
@@ -138,6 +142,23 @@ export function EditEventForm({ initialData, eventId }: EditEventFormProps) {
                   />
                 </PopoverContent>
               </Popover>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="expectations"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>What to Expect (one item per line)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder={"Networking opportunities\nExpert talks"}
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
