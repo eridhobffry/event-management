@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { events } from "@/db/schema";
 import { stackServerApp } from "@/stack";
+import { eq } from "drizzle-orm";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -49,4 +50,63 @@ export async function createEvent(values: z.infer<typeof formSchema>) {
 
   revalidatePath("/dashboard/events");
   redirect("/dashboard/events");
+}
+
+export async function updateEvent(
+  id: string,
+  values: z.infer<typeof formSchema>
+) {
+  const user = await stackServerApp.getUser();
+
+  if (!user) {
+    throw new Error("You must be logged in to update an event.");
+  }
+
+  const validatedFields = formSchema.safeParse(values);
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "Missing Fields. Failed to Update Event.",
+    };
+  }
+
+  const { name, description, date, location } = validatedFields.data;
+
+  try {
+    await db
+      .update(events)
+      .set({
+        name,
+        description,
+        date,
+        location,
+      })
+      .where(eq(events.id, id));
+  } catch (error) {
+    return {
+      message: "Database Error: Failed to Update Event.",
+    };
+  }
+
+  revalidatePath("/dashboard/events");
+  redirect("/dashboard/events");
+}
+
+export async function deleteEvent(id: string) {
+  const user = await stackServerApp.getUser();
+
+  if (!user) {
+    throw new Error("You must be logged in to delete an event.");
+  }
+
+  try {
+    await db.delete(events).where(eq(events.id, id));
+  } catch (error) {
+    return {
+      message: "Database Error: Failed to Delete Event.",
+    };
+  }
+
+  revalidatePath("/dashboard/events");
 }

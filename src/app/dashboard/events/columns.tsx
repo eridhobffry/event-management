@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { events } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { DeleteEventButton } from "@/components/delete-event-button";
 
 export type Event = typeof events.$inferSelect;
 
@@ -75,10 +77,12 @@ export const columns: ColumnDef<Event>[] = [
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem>Edit event</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Delete event
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/events/${event.id}/edit`}>
+                Edit event
+              </Link>
             </DropdownMenuItem>
+            <DeleteEventButton eventId={event.id} eventName={event.name} />
           </DropdownMenuContent>
         </DropdownMenu>
       );
