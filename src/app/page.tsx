@@ -22,15 +22,30 @@ export default function Home() {
           </p>
         </div>
 
+        {/* Featured Call-to-Action */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-8 text-white text-center mb-8">
+          <h2 className="text-2xl font-bold mb-4">Discover Amazing Events</h2>
+          <p className="text-blue-100 mb-6">
+            Browse and register for events happening in your area
+          </p>
+          <Button
+            asChild
+            size="lg"
+            className="bg-white text-blue-600 hover:bg-gray-100"
+          >
+            <Link href="/events">Browse Events →</Link>
+          </Button>
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader>
-              <CardTitle>🎟️ Events</CardTitle>
+              <CardTitle>🎟️ Manage Events</CardTitle>
               <CardDescription>Create and manage your events</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/events">View Events</Link>
+              <Button asChild className="w-full" variant="outline">
+                <Link href="/dashboard/events">Event Dashboard</Link>
               </Button>
             </CardContent>
           </Card>
@@ -69,7 +84,7 @@ export default function Home() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/dashboard/users">
+              <Link href="/dashboard">
                 <Button className="w-full">Go to Dashboard</Button>
               </Link>
             </CardContent>
