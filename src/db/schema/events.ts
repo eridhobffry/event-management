@@ -1,4 +1,11 @@
-import { pgTable, uuid, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  boolean,
+  json,
+} from "drizzle-orm/pg-core";
 import { users } from "./users";
 
 export const events = pgTable("events", {
@@ -7,6 +14,7 @@ export const events = pgTable("events", {
   description: text("description"),
   date: timestamp("date", { withTimezone: true }),
   location: text("location"),
+  expectations: json("expectations").$type<string[]>().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   createdBy: text("created_by").references(() => users.id),
   isActive: boolean("is_active").default(true),

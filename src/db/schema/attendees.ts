@@ -12,6 +12,7 @@ export const attendees = pgTable(
     userId: text("user_id").references(() => users.id),
     name: text("name").notNull(),
     email: text("email").notNull(),
+    phone: text("phone"),
     checkedIn: timestamp("checked_in", { withTimezone: true }),
     registeredAt: timestamp("registered_at", {
       withTimezone: true,
