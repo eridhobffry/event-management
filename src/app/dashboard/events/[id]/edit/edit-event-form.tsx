@@ -119,7 +119,7 @@ export function EditEventForm({ initialData, eventId }: EditEventFormProps) {
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-[240px] pl-3 text-left font-normal",
+                        "w-full sm:w-[280px] pl-3 text-left font-normal",
                         !field.value && "text-muted-foreground"
                       )}
                     >
@@ -176,14 +176,19 @@ export function EditEventForm({ initialData, eventId }: EditEventFormProps) {
             </FormItem>
           )}
         />
-        <div className="flex gap-4">
-          <Button type="submit" disabled={isPending}>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="w-full sm:w-auto"
+          >
             {isPending ? "Updating..." : "Update Event"}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => window.history.back()}
+            className="w-full sm:w-auto"
           >
             Cancel
           </Button>
