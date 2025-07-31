@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
-import { events } from "@/db/schema";
+import { events, attendees } from "@/db/schema";
 import { columns } from "@/app/dashboard/events/columns";
 import { DataTable } from "@/components/data-table";
+import { count, eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,7 +22,23 @@ export default async function EventsPage() {
   // Check authentication - redirect if not logged in
   await stackServerApp.getUser({ or: "redirect" });
 
-  const data = await db.select().from(events);
+  // Get events with attendee counts
+  const data = await db
+    .select({
+      id: events.id,
+      name: events.name,
+      description: events.description,
+      date: events.date,
+      location: events.location,
+      expectations: events.expectations,
+      isActive: events.isActive,
+      createdAt: events.createdAt,
+      createdBy: events.createdBy,
+      attendeeCount: count(attendees.id),
+    })
+    .from(events)
+    .leftJoin(attendees, eq(events.id, attendees.eventId))
+    .groupBy(events.id);
 
   return (
     <SidebarProvider

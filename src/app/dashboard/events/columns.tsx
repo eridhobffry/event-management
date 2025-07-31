@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,12 +17,25 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { DeleteEventButton } from "@/components/delete-event-button";
 
-export type Event = typeof events.$inferSelect;
+export type Event = typeof events.$inferSelect & {
+  attendeeCount: number;
+};
 
 export const columns: ColumnDef<Event>[] = [
   {
     accessorKey: "name",
     header: "Name",
+    cell: ({ row }) => {
+      const event = row.original;
+      return (
+        <Link
+          href={`/dashboard/events/${event.id}`}
+          className="font-medium hover:underline"
+        >
+          {event.name}
+        </Link>
+      );
+    },
   },
   {
     accessorKey: "date",
@@ -42,6 +55,21 @@ export const columns: ColumnDef<Event>[] = [
   {
     accessorKey: "location",
     header: "Location",
+  },
+  {
+    accessorKey: "attendeeCount",
+    header: "Attendees",
+    cell: ({ row }) => {
+      const count = row.getValue("attendeeCount") as number;
+      return (
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="gap-1">
+            <Users className="h-3 w-3" />
+            {count}
+          </Badge>
+        </div>
+      );
+    },
   },
   {
     accessorKey: "isActive",
