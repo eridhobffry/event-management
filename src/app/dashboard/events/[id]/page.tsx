@@ -16,9 +16,9 @@ import { stackServerApp } from "@/stack";
 import { count } from "drizzle-orm";
 
 interface EventDetailsPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function EventDetailsPage({

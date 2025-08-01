@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { StackProvider, StackTheme } from "@stackframe/stack";
-import { stackServerApp } from "../stack";
+import { stackClientApp } from "../stack";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -65,9 +65,13 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased`}
         suppressHydrationWarning
-      ><StackProvider app={stackServerApp}><StackTheme>
-        <Providers>{children}</Providers>
-      </StackTheme></StackProvider></body>
+      >
+        <StackProvider app={stackClientApp}>
+          <StackTheme>
+            <Providers>{children}</Providers>
+          </StackTheme>
+        </StackProvider>
+      </body>
     </html>
   );
 }
