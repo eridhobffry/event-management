@@ -101,6 +101,16 @@ export default async function EventDetailsPage({
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
+                      <Link href={`/dashboard/events/${event.id}/attendees`}>
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          className="gap-2 w-full sm:w-auto"
+                        >
+                          <Users className="h-4 w-4" />
+                          View Attendees ({event.attendeeCount})
+                        </Button>
+                      </Link>
                       <Link href={`/dashboard/events/${event.id}/edit`}>
                         <Button size="lg" className="gap-2 w-full sm:w-auto">
                           <Edit className="h-4 w-4" />

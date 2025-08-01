@@ -83,7 +83,17 @@ export function EventCard({ event }: { event: Event }) {
                     Copy event ID
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>View details</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/dashboard/events/${event.id}`}>
+                      View details
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/dashboard/events/${event.id}/attendees`}>
+                      View attendees ({event.attendeeCount})
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href={`/dashboard/events/${event.id}/edit`}>
                       Edit event

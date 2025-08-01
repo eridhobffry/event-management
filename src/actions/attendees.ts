@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { attendees } from "@/db/schema";
 import { sendEmail } from "@/lib/email";
 import { stackServerApp } from "@/stack";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 const schema = z.object({
   firstName: z.string().min(1),
@@ -17,6 +17,33 @@ const schema = z.object({
   phone: z.string().optional(),
   eventId: z.uuid(),
 });
+
+// Get attendees for a specific event (for event owners)
+export async function getEventAttendees(eventId: string) {
+  // Verify user is authenticated
+  await stackServerApp.getUser({ or: "redirect" });
+
+  try {
+    const eventAttendees = await db
+      .select({
+        id: attendees.id,
+        name: attendees.name,
+        email: attendees.email,
+        phone: attendees.phone,
+        userId: attendees.userId,
+        checkedIn: attendees.checkedIn,
+        registeredAt: attendees.registeredAt,
+      })
+      .from(attendees)
+      .where(eq(attendees.eventId, eventId))
+      .orderBy(desc(attendees.registeredAt));
+
+    return { success: true, attendees: eventAttendees };
+  } catch (error) {
+    console.error("Error fetching event attendees:", error);
+    return { success: false, message: "Failed to fetch attendees" };
+  }
+}
 
 export async function registerAttendee(values: z.infer<typeof schema>) {
   const validated = schema.safeParse(values);
