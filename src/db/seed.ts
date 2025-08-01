@@ -1,4 +1,4 @@
-// @ts-nocheck
+// Seed file for initial database data
 import { db } from "../lib/db";
 import * as schema from "./schema";
 
@@ -29,62 +29,62 @@ const main = async () => {
   const rolePermissions = [
     // Admin
     {
-      roleId: insertedRoles.find((r) => r.name === "Admin").id,
-      permissionId: insertedPermissions.find((p) => p.name === "users:manage")
+      roleId: insertedRoles.find((r) => r.name === "Admin")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "users:manage")!
         .id,
     },
     {
-      roleId: insertedRoles.find((r) => r.name === "Admin").id,
-      permissionId: insertedPermissions.find((p) => p.name === "events:create")
+      roleId: insertedRoles.find((r) => r.name === "Admin")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "events:create")!
         .id,
     },
     {
-      roleId: insertedRoles.find((r) => r.name === "Admin").id,
-      permissionId: insertedPermissions.find((p) => p.name === "events:read")
+      roleId: insertedRoles.find((r) => r.name === "Admin")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "events:read")!
         .id,
     },
     {
-      roleId: insertedRoles.find((r) => r.name === "Admin").id,
-      permissionId: insertedPermissions.find((p) => p.name === "events:update")
+      roleId: insertedRoles.find((r) => r.name === "Admin")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "events:update")!
         .id,
     },
     {
-      roleId: insertedRoles.find((r) => r.name === "Admin").id,
-      permissionId: insertedPermissions.find((p) => p.name === "events:delete")
+      roleId: insertedRoles.find((r) => r.name === "Admin")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "events:delete")!
         .id,
     },
     {
-      roleId: insertedRoles.find((r) => r.name === "Admin").id,
+      roleId: insertedRoles.find((r) => r.name === "Admin")!.id,
       permissionId: insertedPermissions.find(
         (p) => p.name === "attendees:manage"
-      ).id,
+      )!.id,
     },
     // Promoter
     {
-      roleId: insertedRoles.find((r) => r.name === "Promoter").id,
-      permissionId: insertedPermissions.find((p) => p.name === "events:create")
+      roleId: insertedRoles.find((r) => r.name === "Promoter")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "events:create")!
         .id,
     },
     {
-      roleId: insertedRoles.find((r) => r.name === "Promoter").id,
-      permissionId: insertedPermissions.find((p) => p.name === "events:read")
+      roleId: insertedRoles.find((r) => r.name === "Promoter")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "events:read")!
         .id,
     },
     {
-      roleId: insertedRoles.find((r) => r.name === "Promoter").id,
-      permissionId: insertedPermissions.find((p) => p.name === "events:update")
+      roleId: insertedRoles.find((r) => r.name === "Promoter")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "events:update")!
         .id,
     },
     {
-      roleId: insertedRoles.find((r) => r.name === "Promoter").id,
+      roleId: insertedRoles.find((r) => r.name === "Promoter")!.id,
       permissionId: insertedPermissions.find(
         (p) => p.name === "attendees:manage"
-      ).id,
+      )!.id,
     },
     // Attendee
     {
-      roleId: insertedRoles.find((r) => r.name === "Attendee").id,
-      permissionId: insertedPermissions.find((p) => p.name === "events:read")
+      roleId: insertedRoles.find((r) => r.name === "Attendee")!.id,
+      permissionId: insertedPermissions.find((p) => p.name === "events:read")!
         .id,
     },
   ];
