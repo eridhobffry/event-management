@@ -52,7 +52,7 @@ export async function createEvent(values: z.infer<typeof formSchema>) {
       expectations: expectationsArray,
       createdBy: user.id,
     });
-  } catch (error) {
+  } catch {
     return {
       message: "Database Error: Failed to Create Event.",
     };
@@ -102,7 +102,7 @@ export async function updateEvent(
         expectations: expectationsArray,
       })
       .where(eq(events.id, id));
-  } catch (error) {
+  } catch {
     return {
       message: "Database Error: Failed to Update Event.",
     };
@@ -121,7 +121,7 @@ export async function deleteEvent(id: string) {
 
   try {
     await db.delete(events).where(eq(events.id, id));
-  } catch (error) {
+  } catch {
     return {
       message: "Database Error: Failed to Delete Event.",
     };

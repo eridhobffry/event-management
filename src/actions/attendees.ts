@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+// import { redirect } from "next/navigation"; // Removed redirect as we now return success status
 
 import { db } from "@/lib/db";
 import { attendees } from "@/db/schema";
@@ -55,7 +55,7 @@ export async function registerAttendee(values: z.infer<typeof schema>) {
       email,
       phone,
     });
-  } catch (error) {
+  } catch {
     return { message: "Database error while registering." };
   }
 
@@ -88,5 +88,7 @@ export async function registerAttendee(values: z.infer<typeof schema>) {
   }
 
   revalidatePath(`/events/${eventId}/register`);
-  redirect(`/events/${eventId}/register/thanks`);
+
+  // Return success to allow component to show animation before redirect
+  return { success: true, eventId };
 }
