@@ -42,3 +42,6 @@ next-env.d.ts
 
 # package lock
 package-lock.json
+
+# sprint planning (private development planning)
+/sprint-planning/
