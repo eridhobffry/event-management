@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is an Event Management dashboard built with Next.js (App Router), Drizzle ORM, Neon, and Stack Auth. See `docs/` for product docs.
 
 ## Getting Started
 
@@ -19,6 +19,35 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Stripe Test Setup (scaffold)
+
+1. Install SDK
+
+```bash
+npm install stripe
+```
+
+2. Add envs (see `.env.local.example`)
+
+```bash
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+3. Start dev server, then in another terminal:
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhooks
+stripe trigger payment_intent.succeeded
+```
+
+4. Webhook route
+
+The scaffold lives at `src/app/api/stripe/webhooks/route.ts` and validates signature; no business logic yet.
+
+See `CORE_CHALLENGE_PAYMENT.md` for payment design notes.
 
 ## Learn More
 
