@@ -32,9 +32,9 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 
 ### C) Stripe Test Prep (No UI yet)
 
-- [ ] Add `.env.local` placeholders for Stripe keys.
-- [ ] Install Stripe SDK; scaffold `src/app/api/stripe/webhooks/route.ts` (no business logic yet).
-- [ ] Document payment methods per `TECH_STACK_2025.md` and `CORE_CHALLENGE_PAYMENT.md`.
+- [x] Add `.env.local` placeholders for Stripe keys (documented in `README.md`).
+- [x] Install Stripe SDK; scaffold `src/app/api/stripe/webhooks/route.ts` (signature verified via CLI; no business logic yet).
+- [x] Document payment methods per `TECH_STACK_2025.md` and `CORE_CHALLENGE_PAYMENT.md` (linked from `README.md`).
 
 ## 🔬 QA Checklist
 
@@ -84,9 +84,9 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 
 ### 5) Stripe prep
 
-- [ ] `yarn add stripe` and add env keys placeholders.
-- [ ] Scaffold webhook route with signature verification todo.
-- [ ] Add `docs/CORE_CHALLENGE_PAYMENT.md` link and setup steps to `README.md`.
+- [x] `npm install stripe` and add env keys placeholders.
+- [x] Scaffold webhook route with signature verification in place (no business logic yet).
+- [x] Add `docs/CORE_CHALLENGE_PAYMENT.md` link and setup steps to `README.md`.
 
 ### 6) Database alignment (Neon ↔ Drizzle)
 
