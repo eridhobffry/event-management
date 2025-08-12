@@ -2,7 +2,7 @@ import { db } from "@/lib/db";
 import { events, attendees } from "@/db/schema";
 import { columns } from "@/app/dashboard/events/columns";
 import { DataTable } from "@/components/data-table";
-import { count, eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,7 +22,16 @@ export default async function EventsPage() {
   // Check authentication - redirect if not logged in
   await stackServerApp.getUser({ or: "redirect" });
 
-  // Get events with attendee counts
+  // Get events with attendee counts via derived subquery join (robust across dialects)
+  const ac = db
+    .select({
+      eventId: attendees.eventId,
+      cnt: count(attendees.id).as("cnt"),
+    })
+    .from(attendees)
+    .groupBy(attendees.eventId)
+    .as("ac");
+
   const data = await db
     .select({
       id: events.id,
@@ -34,11 +43,10 @@ export default async function EventsPage() {
       isActive: events.isActive,
       createdAt: events.createdAt,
       createdBy: events.createdBy,
-      attendeeCount: count(attendees.id),
+      attendeeCount: sql<number>`coalesce(${ac.cnt}, 0)`.as("attendeeCount"),
     })
     .from(events)
-    .leftJoin(attendees, eq(events.id, attendees.eventId))
-    .groupBy(events.id);
+    .leftJoin(ac, eq(ac.eventId, events.id));
 
   return (
     <SidebarProvider

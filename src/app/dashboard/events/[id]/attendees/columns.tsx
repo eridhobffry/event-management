@@ -12,6 +12,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Mail, Phone, CheckCircle, Clock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import { toast } from "sonner";
 
 // This type should match the return type of getEventAttendees
 export type Attendee = {
@@ -131,41 +134,82 @@ export const attendeeColumns: ColumnDef<Attendee>[] = [
   {
     id: "actions",
     header: "Actions",
-    cell: ({ row }) => {
-      const attendee = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(attendee.email)}
-            >
-              Copy email
-            </DropdownMenuItem>
-            {attendee.phone && (
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(attendee.phone!)}
-              >
-                Copy phone
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              {attendee.checkedIn ? "Mark as Pending" : "Mark as Checked In"}
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive">
-              Remove attendee
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
+    cell: ({ row }) => <RowActions attendee={row.original} />,
   },
 ];
+
+function RowActions({ attendee }: { attendee: Attendee }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  async function toggleCheckIn() {
+    const params = new URLSearchParams({ id: attendee.id });
+    const res = await fetch(`/api/attendees/check-in?${params.toString()}`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      toast.error("Failed to update status");
+      return;
+    }
+    toast.success(
+      attendee.checkedIn ? "Marked as pending" : "Marked as checked in"
+    );
+    startTransition(() => router.refresh());
+  }
+
+  async function remove() {
+    const params = new URLSearchParams({ id: attendee.id });
+    const res = await fetch(`/api/attendees/remove?${params.toString()}`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      toast.error("Failed to remove attendee");
+      return;
+    }
+    toast.success("Attendee removed");
+    startTransition(() => router.refresh());
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem
+          onClick={() => navigator.clipboard.writeText(attendee.email)}
+          disabled={isPending}
+        >
+          Copy email
+        </DropdownMenuItem>
+        {attendee.phone && (
+          <DropdownMenuItem
+            onClick={() => navigator.clipboard.writeText(attendee.phone!)}
+            disabled={isPending}
+          >
+            Copy phone
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={toggleCheckIn} disabled={isPending}>
+          {isPending
+            ? "Updating..."
+            : attendee.checkedIn
+            ? "Mark as Pending"
+            : "Mark as Checked In"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="text-destructive"
+          onClick={remove}
+          disabled={isPending}
+        >
+          {isPending ? "Removing..." : "Remove attendee"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

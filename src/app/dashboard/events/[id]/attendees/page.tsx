@@ -135,7 +135,7 @@ export default async function AttendeesPage({
 
               {/* Attendees Table */}
               <div className="px-4 lg:px-6">
-                <div className="max-w-7xl">
+                <div className="w-full">
                   {attendeeCount > 0 ? (
                     <DataTable
                       columns={attendeeColumns}
