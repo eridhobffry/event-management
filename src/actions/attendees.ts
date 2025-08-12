@@ -9,14 +9,10 @@ import { attendees } from "@/db/schema";
 import { sendEmail } from "@/lib/email";
 import { stackServerApp } from "@/stack";
 import { eq, and, desc, isNull, isNotNull, count, sql } from "drizzle-orm";
-
-const schema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  email: z.email(),
-  phone: z.string().optional(),
-  eventId: z.uuid(),
-});
+import {
+  attendeeRegisterSchema,
+  type AttendeeRegisterInput,
+} from "@/schemas/attendees";
 
 // Get attendees for a specific event (for event owners)
 export async function getEventAttendees(eventId: string) {
@@ -113,8 +109,8 @@ export async function listAttendeesByEventId(
   }
 }
 
-export async function registerAttendee(values: z.infer<typeof schema>) {
-  const validated = schema.safeParse(values);
+export async function registerAttendee(values: AttendeeRegisterInput) {
+  const validated = attendeeRegisterSchema.safeParse(values);
 
   if (!validated.success) {
     return {

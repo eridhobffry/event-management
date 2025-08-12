@@ -12,9 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { users } from "@/db/schema";
-
-export type User = typeof users.$inferSelect;
+import type { User } from "@/types/db";
 
 export const columns: ColumnDef<User>[] = [
   {

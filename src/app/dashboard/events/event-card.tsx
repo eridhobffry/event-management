@@ -19,9 +19,9 @@ import {
 import { Calendar, MapPin, MoreHorizontal, Users } from "lucide-react";
 import Link from "next/link";
 import { DeleteEventButton } from "@/components/delete-event-button";
-import { events } from "@/db/schema";
+import type { Event as DbEvent } from "@/types/db";
 
-export type Event = typeof events.$inferSelect & {
+export type Event = DbEvent & {
   attendeeCount: number;
 };
 
