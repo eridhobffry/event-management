@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { Calendar, MapPin, Users, ArrowLeft, Edit } from "lucide-react";
 import Link from "next/link";
 
@@ -13,7 +13,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DeleteEventButtonStandalone } from "@/components/delete-event-button-standalone";
 import { stackServerApp } from "@/stack";
-import { count } from "drizzle-orm";
 
 interface EventDetailsPageProps {
   params: Promise<{
@@ -30,7 +29,16 @@ export default async function EventDetailsPage({
   // Await params for Next.js compatibility
   const { id } = await params;
 
-  // Get event with attendee count
+  // Get event with attendee count via derived subquery join
+  const counts = db
+    .select({
+      eventId: attendees.eventId,
+      cnt: count(attendees.id).as("cnt"),
+    })
+    .from(attendees)
+    .groupBy(attendees.eventId)
+    .as("counts");
+
   const eventData = await db
     .select({
       id: events.id,
@@ -42,12 +50,14 @@ export default async function EventDetailsPage({
       isActive: events.isActive,
       createdAt: events.createdAt,
       createdBy: events.createdBy,
-      attendeeCount: count(attendees.id),
+      attendeeCount: sql<number>`coalesce(${counts.cnt}, 0)`.as(
+        "attendeeCount"
+      ),
     })
     .from(events)
-    .leftJoin(attendees, eq(events.id, attendees.eventId))
+    .leftJoin(counts, eq(counts.eventId, events.id))
     .where(eq(events.id, id))
-    .groupBy(events.id);
+    .limit(1);
 
   if (!eventData.length) {
     notFound();
@@ -128,8 +138,8 @@ export default async function EventDetailsPage({
 
               {/* Event Details */}
               <div className="px-4 lg:px-6">
-                <div className="max-w-4xl">
-                  <Card>
+                <div className="w-full">
+                  <Card className="w-full">
                     <CardHeader>
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-2">

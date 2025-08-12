@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon, ArrowLeft } from "lucide-react";
 import { useTransition } from "react";
@@ -31,22 +30,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { createEvent } from "@/actions/events";
 import { toast } from "sonner";
-
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  description: z.string().optional(),
-  date: z.date({
-    message: "A date is required.",
-  }),
-  location: z.string().optional(),
-  expectations: z.string().optional(),
-});
+import { eventFormSchema, type EventFormInput } from "@/schemas/events";
 
 export default function CreateEventPage() {
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<EventFormInput>({
+    resolver: zodResolver(eventFormSchema),
     defaultValues: {
       name: "",
       description: "",
@@ -55,7 +45,7 @@ export default function CreateEventPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: EventFormInput) {
     startTransition(async () => {
       const result = await createEvent(values);
       if (result?.errors) {

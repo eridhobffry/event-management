@@ -12,12 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { events } from "@/db/schema";
+import type { Event as DbEvent } from "@/types/db";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { DeleteEventButton } from "@/components/delete-event-button";
 
-export type Event = typeof events.$inferSelect & {
+export type Event = DbEvent & {
   attendeeCount: number;
 };
 

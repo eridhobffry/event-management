@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { AttendeeRegistration } from "@/types/event";
+import {
+  attendeeRegisterSchema,
+  type AttendeeRegisterInput,
+} from "@/schemas/attendees";
 import {
   Form,
   FormControl,
@@ -20,13 +22,7 @@ import {
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.email("Invalid email address"),
-  phone: z.string().optional(),
-  eventId: z.uuid(),
-});
+// Centralized schema used for validation
 
 interface Props {
   eventId: string;
@@ -37,8 +33,8 @@ export default function RegisterForm({ eventId }: Props) {
   const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
 
-  const form = useForm<AttendeeRegistration>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<AttendeeRegisterInput>({
+    resolver: zodResolver(attendeeRegisterSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -48,7 +44,7 @@ export default function RegisterForm({ eventId }: Props) {
     },
   });
 
-  const onSubmit = async (data: AttendeeRegistration) => {
+  const onSubmit = async (data: AttendeeRegisterInput) => {
     startTransition(async () => {
       const res = await registerAttendee({
         ...data,

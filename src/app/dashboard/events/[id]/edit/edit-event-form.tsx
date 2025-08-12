@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { useTransition } from "react";
@@ -27,19 +26,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { updateEvent } from "@/actions/events";
 import { toast } from "sonner";
-import { events } from "@/db/schema";
+import type { Event } from "@/types/db";
+import { eventFormSchema, type EventFormInput } from "@/schemas/events";
 
-const formSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  description: z.string().optional(),
-  date: z.date({
-    message: "A date is required.",
-  }),
-  location: z.string().optional(),
-  expectations: z.string().optional(),
-});
-
-type Event = typeof events.$inferSelect;
+// Event type imported from centralized DB types
 
 interface EditEventFormProps {
   initialData: Event;
@@ -49,8 +39,8 @@ interface EditEventFormProps {
 export function EditEventForm({ initialData, eventId }: EditEventFormProps) {
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<EventFormInput>({
+    resolver: zodResolver(eventFormSchema),
     defaultValues: {
       name: initialData.name || "",
       description: initialData.description || "",
@@ -62,7 +52,7 @@ export function EditEventForm({ initialData, eventId }: EditEventFormProps) {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  function onSubmit(values: EventFormInput) {
     startTransition(async () => {
       const result = await updateEvent(eventId, values);
       if (result?.errors) {

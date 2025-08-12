@@ -394,6 +394,25 @@ const main = async () => {
 
   await db.insert(schema.attendees).values(sampleAttendees);
 
+  // Add extra attendees to first event to exceed 25 for pagination testing
+  const extra: {
+    eventId: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    userId: string | null;
+  }[] = [];
+  for (let i = 1; i <= 30; i++) {
+    extra.push({
+      eventId: insertedEvents[0].id,
+      name: `Test User ${i}`,
+      email: `test.user${i}@example.com`,
+      phone: null,
+      userId: null,
+    });
+  }
+  await db.insert(schema.attendees).values(extra);
+
   // Mark some attendees as checked in (for testing check-in status)
   console.log("✅ Marking some attendees as checked in...");
   const someAttendees = await db.select().from(schema.attendees).limit(8);

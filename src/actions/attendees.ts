@@ -8,15 +8,11 @@ import { db } from "@/lib/db";
 import { attendees } from "@/db/schema";
 import { sendEmail } from "@/lib/email";
 import { stackServerApp } from "@/stack";
-import { eq, and, desc } from "drizzle-orm";
-
-const schema = z.object({
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  email: z.email(),
-  phone: z.string().optional(),
-  eventId: z.uuid(),
-});
+import { eq, and, desc, isNull, isNotNull, count, sql } from "drizzle-orm";
+import {
+  attendeeRegisterSchema,
+  type AttendeeRegisterInput,
+} from "@/schemas/attendees";
 
 // Get attendees for a specific event (for event owners)
 export async function getEventAttendees(eventId: string) {
@@ -45,8 +41,76 @@ export async function getEventAttendees(eventId: string) {
   }
 }
 
-export async function registerAttendee(values: z.infer<typeof schema>) {
-  const validated = schema.safeParse(values);
+export async function listAttendeesByEventId(
+  eventId: string,
+  options?: {
+    q?: string;
+    status?: "all" | "checkedIn" | "pending";
+    page?: number;
+    pageSize?: number;
+  }
+) {
+  await stackServerApp.getUser({ or: "redirect" });
+
+  const q = options?.q?.trim() ?? "";
+  const status = options?.status ?? "all";
+  const page = Math.max(1, options?.page ?? 1);
+  const pageSize = Math.min(100, Math.max(1, options?.pageSize ?? 25));
+
+  // Build filters
+  const filters = [eq(attendees.eventId, eventId)];
+  if (q.length > 0) {
+    const qLike = `%${q.toLowerCase()}%`;
+    // Use SQL template to avoid dialect-specific helpers causing undefined types
+    filters.push(
+      sql`(lower(${attendees.name}) like ${qLike} or lower(${attendees.email}) like ${qLike})`
+    );
+  }
+  if (status === "checkedIn") {
+    filters.push(isNotNull(attendees.checkedIn));
+  } else if (status === "pending") {
+    filters.push(isNull(attendees.checkedIn));
+  }
+
+  const whereClause = and(...filters);
+
+  try {
+    const [{ value: total }] = await db
+      .select({ value: count() })
+      .from(attendees)
+      .where(whereClause);
+
+    const rows = await db
+      .select({
+        id: attendees.id,
+        name: attendees.name,
+        email: attendees.email,
+        phone: attendees.phone,
+        userId: attendees.userId,
+        checkedIn: attendees.checkedIn,
+        registeredAt: attendees.registeredAt,
+      })
+      .from(attendees)
+      .where(whereClause)
+      .orderBy(desc(attendees.registeredAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
+
+    return {
+      success: true as const,
+      attendees: rows,
+      total,
+      page,
+      pageSize,
+    };
+  } catch (error) {
+    console.error("Error listing event attendees:", error);
+    return { success: false as const, message: "Failed to list attendees" };
+  }
+}
+
+export async function registerAttendee(values: AttendeeRegisterInput) {
+  const validated = attendeeRegisterSchema.safeParse(values);
 
   if (!validated.success) {
     return {
