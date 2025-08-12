@@ -17,18 +17,18 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 
 ### A) Attendee List (Owners)
 
-- [ ] Query attendees by `eventId` in `src/actions/attendees.ts` (server action) with pagination.
-- [ ] Add attendees page table `src/app/dashboard/events/[id]/attendees/page.tsx` using `data-table`.
-- [ ] Columns in `src/app/dashboard/events/[id]/attendees/columns.tsx` (name, email, createdAt, status).
+- [x] Query attendees by `eventId` in `src/actions/attendees.ts` (initial `getEventAttendees`; pagination to add).
+- [x] Add attendees page table `src/app/dashboard/events/[id]/attendees/page.tsx` using `data-table`.
+- [x] Columns in `src/app/dashboard/events/[id]/attendees/columns.tsx` (name, email, createdAt, status).
 - [ ] Add search (by name/email) and filter (status) to table.
-- [ ] Add `export-button.tsx` to download CSV via server route.
-- [ ] Wire nav link from event details to attendees page.
-- [ ] Empty/loading/error states consistent with design system.
+- [x] Add `export-button.tsx` to download CSV (client-side for now).
+- [x] Wire nav link from event details to attendees page.
+- [x] Empty/loading/error states consistent with design system.
 
 ### B) Minor UX polish (fast wins)
 
-- [ ] Show attendee count badge on `event-card.tsx` and desktop table.
-- [ ] Breadcrumbs and header consistency per dashboard pages.
+- [x] Show attendee count badge on `event-card.tsx` and desktop table.
+- [x] Breadcrumbs and header consistency per dashboard pages.
 
 ### C) Stripe Test Prep (No UI yet)
 
@@ -64,14 +64,14 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 
 ### 1) Data access
 
-- [ ] `src/actions/attendees.ts`: add `listAttendeesByEventId(eventId, { q, status, page, pageSize })` returning data + total.
+- [x] `src/actions/attendees.ts`: initial `getEventAttendees(eventId)` implemented (add `{ q, status, page, pageSize }` later).
 
 ### 2) UI routes/components
 
-- [ ] `src/app/dashboard/events/[id]/attendees/page.tsx` rendering `DataTable` with server-fetched data.
-- [ ] `src/app/dashboard/events/[id]/attendees/columns.tsx` define columns.
-- [ ] `src/app/dashboard/events/[id]/attendees/export-button.tsx` calling server route to stream CSV.
-- [ ] Link from `src/app/dashboard/events/[id]/page.tsx` header to attendees.
+- [x] `src/app/dashboard/events/[id]/attendees/page.tsx` rendering `DataTable` with server-fetched data.
+- [x] `src/app/dashboard/events/[id]/attendees/columns.tsx` define columns.
+- [x] `src/app/dashboard/events/[id]/attendees/export-button.tsx` (client-side CSV for now; server stream later).
+- [x] Link from `src/app/dashboard/events/[id]/page.tsx` header to attendees.
 
 ### 3) Server API for CSV
 
@@ -79,8 +79,8 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 
 ### 4) UX polish
 
-- [ ] Badge count in `src/app/dashboard/events/event-card.tsx` and table columns.
-- [ ] Empty/loading/error states; responsive cards.
+- [x] Badge count in `src/app/dashboard/events/event-card.tsx` and table columns.
+- [x] Empty/loading/error states; responsive cards.
 
 ### 5) Stripe prep
 
@@ -101,4 +101,4 @@ Small atomic commits:
 - chore(payments): stripe sdk + webhook scaffold (no logic)
 - docs: update `docs/CURRENT_SPRINT.md` and `README.md`
 
-Branch: `docs/current-sprint-2025-08-12`
+Branch: `feat/attendees-list-export`
