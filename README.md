@@ -1,4 +1,4 @@
-This is an Event Management dashboard built with Next.js (App Router), Drizzle ORM, Neon, and Stack Auth. See `docs/` for product docs.
+This is an Event Management dashboard built with Next.js (App Router), Drizzle ORM, Neon, and Stack Auth. See `docs/` for product docs. The canonical sprint plan is at `docs/CURRENT_SPRINT.md` (older plans are archived in `docs/archive/`).
 
 ## Getting Started
 

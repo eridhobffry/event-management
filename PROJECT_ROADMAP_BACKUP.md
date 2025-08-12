@@ -2,6 +2,8 @@
 
 **Last Updated:** August 1, 2025
 **Session Summary:** MVP Planning & Feature Alignment with Zentrale.events Analysis
+
+Note: The active sprint plan now lives in `docs/CURRENT_SPRINT.md`. This file remains as a historical backup; detailed planning notes from `sprint-planning/` have been archived under `docs/archive/sprint-planning/`.
 **MVP Target:** August 20, 2025 (20 days remaining)
 **Vision:** Build Zentrale.events competitor with modern architecture
 

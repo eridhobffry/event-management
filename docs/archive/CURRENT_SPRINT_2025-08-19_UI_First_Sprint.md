@@ -1,8 +1,15 @@
-# 🚀 Current Sprint - Event CRUD Basics
+# 🚀 Sprint: UI‑First Landing, Event Pages, Checkout (Aug 19–25, 2025)
 
-## 📋 EASIEST TODO SELECTED: "Implement basic CRUD operations for events and attendees"
+## 🎯 Goal
 
-### ✅ **COMPLETED STEPS (6/7) - 86% COMPLETE!**
+Ship a UI‑heavy refresh: public landing, event pages, and a clean RSVP/checkout UX (guest first, mobile‑first), plus repo cleanup.
+
+## ✅ Definition of Done
+
+- New landing hero with primary CTA, social proof, fast LCP
+- Event discovery and detail pages with prominent “Get tickets/RSVP” CTA
+- Registration flow: guest, minimal fields, progress indicator, trust signals, mobile‑optimized
+- Basic a11y (focus, contrast) and performance pass
 
 1. **Step 1:** Create Event Button & Form ✅
 2. **Step 2:** Event List Display with Attendee Count ✅
@@ -11,11 +18,20 @@
 5. **Step 5:** Event Deletion (Already Implemented) ✅
 6. **Step 6:** Attendee Registration Form with Validation & Animation ✅
 
-### 🎯 **FINAL STEP (1/7)**
+## 🗂 Scope
 
-7. **Step 7:** Attendee List for Event Owners (20 mins) - **NEXT UP!**
+- Marketing landing page (hero, value prop, social proof, CTA)
+- Event discovery list (cards, basic filters)
+- Event detail (above‑the‑fold key facts + CTA; about/FAQ/share)
+- RSVP/checkout (guest default, summary, progress, trust cues)
+- Cleanup: archive/merge `sprint-planning/` if redundant
 
-### Why This Foundation?
+## 🔬 QA
+
+- Mobile: sticky primary action, thumb zone CTAs, single column
+- Guest checkout works end‑to‑end; inline validation and specific errors
+- Home/event pages LCP ≤ 2s; no jarring CLS
+- Keyboard accessible; visible focus rings
 
 - ✅ Email system already works
 - ✅ Database schema exists
@@ -24,7 +40,20 @@
 - ✅ Create form already exists and looks great!
 - 🎯 Foundation for everything else
 
----
+## 📦 Git Plan
+
+- feat(ui): landing hero + sections
+- feat(events): discovery list + filters
+- feat(events): detail page + CTA
+- feat(checkout): guest RSVP with progress + trust
+- chore(a11y/perf): focus/contrast/LCP tweaks
+- chore(cleanup): archive `sprint-planning/`
+
+## 📚 References
+
+- Event page patterns: Unbounce — https://unbounce.com/landing-page-examples/event-landing-page-examples/
+- Hero trends 2025: SiteMile — https://sitemile.com/best-hero-marquee-design-trends-for-2025-make-your-website-stand-out/
+- Checkout UX best practices: Stripe — https://stripe.com/resources/more/checkout-screen-best-practices and https://stripe.com/resources/more/ecommerce-checkout-best-practices
 
 ## 🔨 BREAKDOWN: Super Small Steps (WITH PROPER STYLING!)
 

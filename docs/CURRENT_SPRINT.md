@@ -1,151 +1,70 @@
-# 🚀 Current Sprint (Aug 12–18, 2025)
+# 🚀 Sprint: UI‑First Landing, Event Pages, Checkout (Aug 19–25, 2025)
 
-Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TECH_STACK_2025.md`, `docs/AI_ENHANCEMENTS.md`, `docs/SERVICE_BLUEPRINT.md`, `docs/CUSTOMER_JOURNEYS.md`.
+Derived from: `docs/UI_UX_GUIDE_2025.md`, `docs/FEATURES_BENCHMARK.md`, `docs/TECH_STACK_2025.md`.
 
-## 🎯 Sprint Goal (MVP Small Wins)
+## 🎯 Sprint Goal
 
-- **Enable organizers to see attendee lists and export CSV**, finishing CRUD foundation.
-- **Prepare Stripe test setup** to kick off paid ticketing next sprint.
+- Redesign public landing and event pages (mobile‑first), and ship a clean RSVP/checkout UX for free registrations.
 
 ## ✅ Definition of Done
 
-- Attendee list visible under `Dashboard → Events → [event] → Attendees` with search, filter, export.
-- Basic loading/empty/error states (mobile-first) aligned with `UI_UX_GUIDE_2025.md`.
-- Tests/build green. Commit history small and scoped.
+- New marketing landing with clear hero, social proof, primary CTA, and fast LCP.
+- Event discovery and event detail page refined with prominent “Get tickets/RSVP” CTA.
+- Registration/checkout flow: guest by default, progress indicator, trust signals, errors in‑place, fully mobile‑optimized.
+- Accessibility (WCAG AA focus states/contrast) and performance (Core Web Vitals) pass.
 
 ## 🗂 Scope and Tasks
 
-### A) Attendee List (Owners)
+### A) Marketing Landing (home)
 
-- [x] Query attendees by `eventId` in `src/actions/attendees.ts` (initial `getEventAttendees`; pagination to add).
-- [x] Add attendees page table `src/app/dashboard/events/[id]/attendees/page.tsx` using `data-table`.
-- [x] Columns in `src/app/dashboard/events/[id]/attendees/columns.tsx` (name, email, createdAt, status).
-- [x] Add search (by name/email) and filter (status) to table.
-- [x] Add `export-button.tsx` to download CSV (client-side for now).
-- [x] Wire nav link from event details to attendees page.
-- [x] Empty/loading/error states consistent with design system.
+- Implement immersive but simple hero (full‑bleed visual/video optional), single CTA, minimal copy; strong value prop and scroll cues ([Unbounce examples](https://unbounce.com/landing-page-examples/event-landing-page-examples/), [2025 hero trends](https://sitemile.com/best-hero-marquee-design-trends-for-2025-make-your-website-stand-out/)).
+- Add lightweight social proof (logos/testimonial) and secondary section linking to events.
 
-### B) Minor UX polish (fast wins)
+### B) Event Discovery/List
 
-- [x] Show attendee count badge on `event-card.tsx` and desktop table.
-- [x] Breadcrumbs and header consistency per dashboard pages.
+- Card/grid with clear date/time, title, location, price badge; mobile cards first.
+- Filters: city/date/type (defer advanced facets).
 
-### C) Stripe Test Prep (No UI yet)
+### C) Event Detail
 
-- [x] Add `.env.local` placeholders for Stripe keys (documented in `README.md`).
-- [x] Install Stripe SDK; scaffold `src/app/api/stripe/webhooks/route.ts` (signature verified via CLI; no business logic yet).
-- [x] Document payment methods per `TECH_STACK_2025.md` and `CORE_CHALLENGE_PAYMENT.md` (linked from `README.md`).
+- Above‑the‑fold: title, date/time, venue map link, price/free badge, primary CTA.
+- Sections: about, lineup/schedule, FAQs, share.
+
+### D) Registration / Checkout (free RSVP baseline)
+
+- Guest checkout, minimal fields, microcopy; show order summary persistently.
+- Progress indicator for multistep (info → confirm); promo code field hidden behind link.
+- Trust signals (lock, card/wallet badges), clear error handling; mobile wallets later.
+- Follow Stripe checkout guidance for form/CTA clarity and trust ([Stripe best practices](https://stripe.com/resources/more/checkout-screen-best-practices), [ecommerce checkout](https://stripe.com/resources/more/ecommerce-checkout-best-practices)).
+
+### E) A11y + Performance
+
+- Contrast, focus states, touch targets ≥44px; lazy images; optimize LCP hero.
+
+### F) Housekeeping
+
+- Archive or merge `sprint-planning/` into `docs/` and remove obsolete duplicates.
 
 ## 🔬 QA Checklist
 
-- [ ] Pagination works (10/25/50 per page) and persists sort/search.
-- [ ] CSV export opens/save with correct headers and UTF-8.
-- [ ] Mobile: table collapses to cards; desktops use table.
-- [ ] AuthZ: only event owners/role can view/export.
-- [ ] No PII in logs; no client secrets in client bundle.
-
-## 📅 Suggested Timeline
-
-- Day 1: Attendee query + table skeleton + navigation
-- Day 2: Search/filter + CSV export
-- Day 3: UX polish + QA + docs + commit
-
-## 🧭 References
-
-- `FEATURES_BENCHMARK.md` → MVP priorities (CRUD, exports, insights)
-- `UI_UX_GUIDE_2025.md` → tables, mobile patterns
-- `TECH_STACK_2025.md` → Drizzle + Neon, payments, analytics
-- `SERVICE_BLUEPRINT.md` → ops flows (attendees, check-in)
-- `CUSTOMER_JOURNEYS.md` → organizer needs
-
----
-
-## 🧱 To-Do (Engineering Steps)
-
-### 1) Data access
-
-- [x] `src/actions/attendees.ts`: `listAttendeesByEventId(eventId, { q, status, page, pageSize })` implemented.
-
-### 2) UI routes/components
-
-- [x] `src/app/dashboard/events/[id]/attendees/page.tsx` rendering `DataTable` with server-fetched data.
-- [x] `src/app/dashboard/events/[id]/attendees/columns.tsx` define columns.
-- [x] `src/app/dashboard/events/[id]/attendees/export-button.tsx` (client-side CSV for now; server stream later).
-- [x] Link from `src/app/dashboard/events/[id]/page.tsx` header to attendees.
-
-### 3) Server API for CSV
-
-- [x] `src/app/api/events/[id]/attendees/export/route.ts` streams CSV with correct headers and auth.
-
-### 4) UX polish
-
-- [x] Badge count in `src/app/dashboard/events/event-card.tsx` and table columns.
-- [x] Empty/loading/error states; responsive cards.
-
-### 5) Stripe prep
-
-- [x] `npm install stripe` and add env keys placeholders.
-- [x] Scaffold webhook route with signature verification in place (no business logic yet).
-- [x] Add `docs/CORE_CHALLENGE_PAYMENT.md` link and setup steps to `README.md`.
-
-### 6) Database alignment (Neon ↔ Drizzle)
-
-- [x] Verified `public` and `neon_auth` schemas match Drizzle definitions (tables, columns, PKs, FKs, uniques, indexes)
-- [x] Confirmed `events.expectations` exists as JSON with default [] and is used by UI
-- [x] Confirmed FKs to `neon_auth.users_sync` exist: `activity_logs.user_id`, `attendees.user_id`, `events.created_by`, `user_roles.user_id`
-- [x] Clean up duplicate migration file `src/db/migrations/0003_add_expectations_column.sql` (keep canonical `0003_glossy_smiling_tiger.sql`)
-- [x] Ensure `.env.local` `NEON_DATABASE_URL` matches the active project endpoint used by the app
-
----
+- Mobile first: thumb‑reachable CTAs, single column, sticky primary action.
+- Guest checkout works without account; errors are inline and specific.
+- No layout shift; LCP ≤ 2s on home and event pages.
+- Keyboard navigation and visible focus across interactive elements.
 
 ## 📦 Git Plan
 
-Small atomic commits:
+- feat(ui): marketing landing hero + sections
+- feat(events): discovery list + filters (basic)
+- feat(events): event detail page with CTA
+- feat(checkout): guest RSVP flow + progress + trust
+- chore(a11y/perf): focus/contrast/speed tweaks
+- chore(docs): archive `sprint-planning/`, update CURRENT_SPRINT
 
-- feat(attendees): list action + pagination
-- feat(attendees): table + search/filter
-- feat(attendees): CSV export route/button
-- chore(ux): attendee badges + empty/loading states
-- chore(payments): stripe sdk + webhook scaffold (no logic)
-- docs: update `docs/CURRENT_SPRINT.md` and `README.md`
+Branch: `feat/ui-landing-events-checkout`
 
-Branch: `feat/attendees-list-export`
+## 🧭 References
 
----
-
-## ✅ Manual Test Plan (Attendees list, search/filter, pagination, CSV)
-
-### Pre-req
-
-- Organizer signed in; at least one event with 15+ attendees across both pending and checked-in statuses.
-
-### Steps
-
-1. Navigate to `Dashboard → Events → [event] → Attendees`.
-   - Expect header shows event name, date, location and total attendees count.
-2. Search by name/email (top filter form) and click Apply.
-   - Expect results filtered; total count reflects filtered set.
-3. Change Status to Pending, Apply; then Checked In, Apply.
-   - Expect only matching status rows; badge/status column updates.
-4. Pagination
-   - With pageSize=25 default: ensure Previous is disabled on page 1; Next is enabled when more than 25; navigate Next then Previous keeps filters.
-5. CSV Export
-   - Click Export CSV; server route downloads file with correct headers and filtered results. Filename includes date. (Client CSV remains fallback.)
-6. Empty state
-   - Pick an event with zero attendees (or apply a search that returns none) and verify empty card + link to registration page.
-
-### Troubleshooting (where to fix if a step fails)
-
-- Data/filtering/pagination: `src/actions/attendees.ts` → `listAttendeesByEventId`
-- Page UI/URL params wiring: `src/app/dashboard/events/[id]/attendees/page.tsx`
-- Table rendering/columns: `src/app/dashboard/events/[id]/attendees/columns.tsx`
-- CSV logic (client): `src/app/dashboard/events/[id]/attendees/export-button.tsx`
-- CSV logic (server): `src/app/api/events/[id]/attendees/export/route.ts`
-- Nav link from event page: `src/app/dashboard/events/[id]/page.tsx`
-- Attendee schema/types: `src/db/schema/attendees.ts`
-- Table component pagination toggle: `src/components/data-table.tsx`
-
-Notes:
-
-- Server pagination is authoritative; client table pagination is disabled via `hidePagination`.
-- Search uses case-insensitive LIKE via SQL template `lower(name/email) like %q%`.
+- Event landing patterns and examples: [Unbounce](https://unbounce.com/landing-page-examples/event-landing-page-examples/), [Landingi roundup](https://landingi.com/landing-page/design-examples/)
+- Hero/landing trends 2025: [SiteMile](https://sitemile.com/best-hero-marquee-design-trends-for-2025-make-your-website-stand-out/)
+- Checkout UX (forms, trust, guest): [Stripe](https://stripe.com/resources/more/checkout-screen-best-practices), [Stripe ecommerce](https://stripe.com/resources/more/ecommerce-checkout-best-practices)
