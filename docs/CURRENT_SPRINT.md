@@ -75,7 +75,7 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 
 ### 3) Server API for CSV
 
-- [ ] `src/app/api/events/[id]/attendees/export/route.ts` streams CSV with correct headers and auth.
+- [x] `src/app/api/events/[id]/attendees/export/route.ts` streams CSV with correct headers and auth.
 
 ### 4) UX polish
 
@@ -93,8 +93,8 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 - [x] Verified `public` and `neon_auth` schemas match Drizzle definitions (tables, columns, PKs, FKs, uniques, indexes)
 - [x] Confirmed `events.expectations` exists as JSON with default [] and is used by UI
 - [x] Confirmed FKs to `neon_auth.users_sync` exist: `activity_logs.user_id`, `attendees.user_id`, `events.created_by`, `user_roles.user_id`
-- [ ] Clean up duplicate migration file `src/db/migrations/0003_add_expectations_column.sql` (keep canonical `0003_glossy_smiling_tiger.sql`)
-- [ ] Ensure `.env.local` `NEON_DATABASE_URL` matches the active project endpoint used by the app
+- [x] Clean up duplicate migration file `src/db/migrations/0003_add_expectations_column.sql` (keep canonical `0003_glossy_smiling_tiger.sql`)
+- [x] Ensure `.env.local` `NEON_DATABASE_URL` matches the active project endpoint used by the app
 
 ---
 
@@ -130,7 +130,7 @@ Branch: `feat/attendees-list-export`
 4. Pagination
    - With pageSize=25 default: ensure Previous is disabled on page 1; Next is enabled when more than 25; navigate Next then Previous keeps filters.
 5. CSV Export
-   - Click Export CSV; file name includes event slug and date; contents have headers: Name, Email, Phone, Status, Registered Date, Check-in Date.
+   - Click Export CSV; server route downloads file with correct headers and filtered results. Filename includes date. (Client CSV remains fallback.)
 6. Empty state
    - Pick an event with zero attendees (or apply a search that returns none) and verify empty card + link to registration page.
 
@@ -140,6 +140,7 @@ Branch: `feat/attendees-list-export`
 - Page UI/URL params wiring: `src/app/dashboard/events/[id]/attendees/page.tsx`
 - Table rendering/columns: `src/app/dashboard/events/[id]/attendees/columns.tsx`
 - CSV logic (client): `src/app/dashboard/events/[id]/attendees/export-button.tsx`
+- CSV logic (server): `src/app/api/events/[id]/attendees/export/route.ts`
 - Nav link from event page: `src/app/dashboard/events/[id]/page.tsx`
 - Attendee schema/types: `src/db/schema/attendees.ts`
 - Table component pagination toggle: `src/components/data-table.tsx`

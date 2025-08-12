@@ -8,8 +8,7 @@ import { db } from "@/lib/db";
 import { attendees } from "@/db/schema";
 import { sendEmail } from "@/lib/email";
 import { stackServerApp } from "@/stack";
-import { eq, and, desc, or, isNull, isNotNull, count, sql } from "drizzle-orm";
-import { like } from "drizzle-orm";
+import { eq, and, desc, isNull, isNotNull, count, sql } from "drizzle-orm";
 
 const schema = z.object({
   firstName: z.string().min(1),

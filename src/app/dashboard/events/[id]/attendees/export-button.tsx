@@ -7,15 +7,38 @@ import { Attendee } from "./columns";
 interface ExportButtonProps {
   attendees: Attendee[];
   eventName: string;
+  eventId: string;
+  q?: string;
+  status?: "all" | "checkedIn" | "pending";
+  useServer?: boolean;
 }
 
-export function ExportButton({ attendees, eventName }: ExportButtonProps) {
+export function ExportButton({
+  attendees,
+  eventName,
+  eventId,
+  q,
+  status = "all",
+  useServer = true,
+}: ExportButtonProps) {
   const handleExport = () => {
+    if (useServer) {
+      const params = new URLSearchParams();
+      if (q && q.trim().length > 0) params.set("q", q.trim());
+      if (status) params.set("status", status);
+      const url = `/api/events/${eventId}/attendees/export${
+        params.toString() ? `?${params.toString()}` : ""
+      }`;
+      // Trigger file download via navigation
+      window.location.href = url;
+      return;
+    }
+
     if (attendees.length === 0) {
       return;
     }
 
-    // Create CSV content
+    // Fallback: client-generated CSV
     const headers = [
       "Name",
       "Email",
@@ -46,7 +69,6 @@ export function ExportButton({ attendees, eventName }: ExportButtonProps) {
       }),
     ].join("\n");
 
-    // Create and download file
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
 
@@ -64,7 +86,6 @@ export function ExportButton({ attendees, eventName }: ExportButtonProps) {
       link.click();
       document.body.removeChild(link);
 
-      // Clean up
       URL.revokeObjectURL(url);
     }
   };

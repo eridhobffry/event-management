@@ -7,11 +7,21 @@ import { events } from "@/db/schema";
 import { Event } from "@/types/event";
 import { eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function PublicEventsPage() {
-  const activeEvents: Event[] = await db
-    .select()
-    .from(events)
-    .where(eq(events.isActive, true));
+  let activeEvents: Event[] = [];
+  try {
+    activeEvents = await db
+      .select()
+      .from(events)
+      .where(eq(events.isActive, true));
+  } catch (err) {
+    console.error(err);
+    // Fallback to empty list if DB not available during build/prerender
+    activeEvents = [];
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-black to-zinc-950 flex flex-col">
