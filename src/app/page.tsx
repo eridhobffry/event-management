@@ -38,7 +38,7 @@ export default function Home() {
                 variant="outline"
                 className="border-white/20 text-white hover:bg-white/10"
               >
-                <Link href="/dashboard/events/new">Create an Event</Link>
+                <Link href="/organizer/overview">Create an Event</Link>
               </Button>
             </div>
             <p className="mt-4 text-xs text-zinc-500">
