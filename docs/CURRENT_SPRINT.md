@@ -20,7 +20,7 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 - [x] Query attendees by `eventId` in `src/actions/attendees.ts` (initial `getEventAttendees`; pagination to add).
 - [x] Add attendees page table `src/app/dashboard/events/[id]/attendees/page.tsx` using `data-table`.
 - [x] Columns in `src/app/dashboard/events/[id]/attendees/columns.tsx` (name, email, createdAt, status).
-- [ ] Add search (by name/email) and filter (status) to table.
+- [x] Add search (by name/email) and filter (status) to table.
 - [x] Add `export-button.tsx` to download CSV (client-side for now).
 - [x] Wire nav link from event details to attendees page.
 - [x] Empty/loading/error states consistent with design system.
@@ -64,7 +64,7 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 
 ### 1) Data access
 
-- [x] `src/actions/attendees.ts`: initial `getEventAttendees(eventId)` implemented (add `{ q, status, page, pageSize }` later).
+- [x] `src/actions/attendees.ts`: `listAttendeesByEventId(eventId, { q, status, page, pageSize })` implemented.
 
 ### 2) UI routes/components
 
@@ -88,6 +88,14 @@ Derived from: `docs/FEATURES_BENCHMARK.md`, `docs/UI_UX_GUIDE_2025.md`, `docs/TE
 - [ ] Scaffold webhook route with signature verification todo.
 - [ ] Add `docs/CORE_CHALLENGE_PAYMENT.md` link and setup steps to `README.md`.
 
+### 6) Database alignment (Neon ↔ Drizzle)
+
+- [x] Verified `public` and `neon_auth` schemas match Drizzle definitions (tables, columns, PKs, FKs, uniques, indexes)
+- [x] Confirmed `events.expectations` exists as JSON with default [] and is used by UI
+- [x] Confirmed FKs to `neon_auth.users_sync` exist: `activity_logs.user_id`, `attendees.user_id`, `events.created_by`, `user_roles.user_id`
+- [ ] Clean up duplicate migration file `src/db/migrations/0003_add_expectations_column.sql` (keep canonical `0003_glossy_smiling_tiger.sql`)
+- [ ] Ensure `.env.local` `NEON_DATABASE_URL` matches the active project endpoint used by the app
+
 ---
 
 ## 📦 Git Plan
@@ -102,3 +110,41 @@ Small atomic commits:
 - docs: update `docs/CURRENT_SPRINT.md` and `README.md`
 
 Branch: `feat/attendees-list-export`
+
+---
+
+## ✅ Manual Test Plan (Attendees list, search/filter, pagination, CSV)
+
+### Pre-req
+
+- Organizer signed in; at least one event with 15+ attendees across both pending and checked-in statuses.
+
+### Steps
+
+1. Navigate to `Dashboard → Events → [event] → Attendees`.
+   - Expect header shows event name, date, location and total attendees count.
+2. Search by name/email (top filter form) and click Apply.
+   - Expect results filtered; total count reflects filtered set.
+3. Change Status to Pending, Apply; then Checked In, Apply.
+   - Expect only matching status rows; badge/status column updates.
+4. Pagination
+   - With pageSize=25 default: ensure Previous is disabled on page 1; Next is enabled when more than 25; navigate Next then Previous keeps filters.
+5. CSV Export
+   - Click Export CSV; file name includes event slug and date; contents have headers: Name, Email, Phone, Status, Registered Date, Check-in Date.
+6. Empty state
+   - Pick an event with zero attendees (or apply a search that returns none) and verify empty card + link to registration page.
+
+### Troubleshooting (where to fix if a step fails)
+
+- Data/filtering/pagination: `src/actions/attendees.ts` → `listAttendeesByEventId`
+- Page UI/URL params wiring: `src/app/dashboard/events/[id]/attendees/page.tsx`
+- Table rendering/columns: `src/app/dashboard/events/[id]/attendees/columns.tsx`
+- CSV logic (client): `src/app/dashboard/events/[id]/attendees/export-button.tsx`
+- Nav link from event page: `src/app/dashboard/events/[id]/page.tsx`
+- Attendee schema/types: `src/db/schema/attendees.ts`
+- Table component pagination toggle: `src/components/data-table.tsx`
+
+Notes:
+
+- Server pagination is authoritative; client table pagination is disabled via `hidePagination`.
+- Search uses case-insensitive LIKE via SQL template `lower(name/email) like %q%`.
