@@ -19,7 +19,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 // Centralized schema used for validation
@@ -31,6 +31,7 @@ interface Props {
 export default function RegisterForm({ eventId }: Props) {
   const [isPending, startTransition] = useTransition();
   const [isSuccess, setIsSuccess] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
   const router = useRouter();
 
   const form = useForm<AttendeeRegisterInput>({
@@ -45,6 +46,10 @@ export default function RegisterForm({ eventId }: Props) {
   });
 
   const onSubmit = async (data: AttendeeRegisterInput) => {
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
     startTransition(async () => {
       const res = await registerAttendee({
         ...data,
@@ -80,6 +85,23 @@ export default function RegisterForm({ eventId }: Props) {
 
   return (
     <Form {...form}>
+      {/* Progress indicator */}
+      <div
+        className="flex items-center justify-center gap-2 mb-4"
+        aria-label="Progress"
+      >
+        <div
+          className={`h-2 w-2 rounded-full ${
+            step >= 1 ? "bg-indigo-400" : "bg-zinc-700"
+          }`}
+        />
+        <div
+          className={`h-2 w-2 rounded-full ${
+            step >= 2 ? "bg-indigo-400" : "bg-zinc-700"
+          }`}
+        />
+      </div>
+
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField
@@ -156,20 +178,42 @@ export default function RegisterForm({ eventId }: Props) {
           )}
         />
 
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-0 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200"
-        >
-          {isPending ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Registering...
-            </>
-          ) : (
-            "Complete Registration"
-          )}
-        </Button>
+        {step === 1 ? (
+          <Button
+            type="submit"
+            className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-0 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200"
+          >
+            Continue
+          </Button>
+        ) : (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-zinc-300">
+              <div className="font-medium text-white mb-2">Order Summary</div>
+              <div className="flex items-center justify-between">
+                <span>1 × RSVP ticket</span>
+                <span className="text-emerald-400">Free</span>
+              </div>
+            </div>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-0 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                "Confirm & Register"
+              )}
+            </Button>
+            <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
+              <Lock className="w-3 h-3" />
+              <span>Secure checkout • No payment required for RSVP</span>
+            </div>
+          </div>
+        )}
       </form>
     </Form>
   );
