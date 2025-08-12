@@ -39,13 +39,52 @@ export async function POST(req: Request) {
     return new NextResponse(`Webhook Error: ${message}`, { status: 400 });
   }
 
-  // Minimal scaffold — no business logic yet; avoid logging PII
-  switch (event.type) {
-    case "payment_intent.succeeded":
-    case "checkout.session.completed":
-    case "payment_intent.payment_failed":
-    default:
-      break;
+  // Minimal handlers — log non-PII metadata only
+  try {
+    switch (event.type) {
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log("stripe:webhook:payment_intent.succeeded", {
+          eventId: event.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          status: paymentIntent.status,
+        });
+        break;
+      }
+      case "payment_intent.payment_failed": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log("stripe:webhook:payment_intent.payment_failed", {
+          eventId: event.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          status: paymentIntent.status,
+        });
+        break;
+      }
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log("stripe:webhook:checkout.session.completed", {
+          eventId: event.id,
+          amountTotal: session.amount_total,
+          currency: session.currency,
+          mode: session.mode,
+        });
+        break;
+      }
+      default: {
+        console.log("stripe:webhook:unhandled", {
+          type: event.type,
+          eventId: event.id,
+        });
+        break;
+      }
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return new NextResponse(`Webhook Handler Error: ${message}`, {
+      status: 500,
+    });
   }
 
   return NextResponse.json({ received: true });
