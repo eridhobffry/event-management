@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: true,
   retries: 0,
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3050",
     trace: "on-first-retry",
   },
   projects: [
@@ -19,9 +19,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    command: "PORT=3050 npm run dev",
+    url: "http://localhost:3050",
+    reuseExistingServer: false,
     stdout: "pipe",
     stderr: "pipe",
     timeout: 180000,
