@@ -125,6 +125,7 @@ export async function registerAttendee(values: AttendeeRegisterInput) {
   // If logged in, attach userId
   const user = await stackServerApp.getUser().catch(() => null);
 
+  let createdAttendeeId: string | null = null;
   try {
     // prevent duplicate registration
     const existing = await db
@@ -139,13 +140,20 @@ export async function registerAttendee(values: AttendeeRegisterInput) {
       };
     }
 
-    await db.insert(attendees).values({
-      eventId,
-      userId: user?.id ?? null,
-      name,
-      email,
-      phone,
-    });
+    const inserted = await db
+      .insert(attendees)
+      .values({
+        eventId,
+        userId: user?.id ?? null,
+        name,
+        email,
+        phone,
+      })
+      .returning({ id: attendees.id });
+
+    if (inserted?.[0]?.id) {
+      createdAttendeeId = inserted[0].id;
+    }
   } catch {
     return { message: "Database error while registering." };
   }
@@ -181,5 +189,5 @@ export async function registerAttendee(values: AttendeeRegisterInput) {
   revalidatePath(`/events/${eventId}/register`);
 
   // Return success to allow component to show animation before redirect
-  return { success: true, eventId };
+  return { success: true, eventId, attendeeId: createdAttendeeId };
 }

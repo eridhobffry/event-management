@@ -50,7 +50,7 @@ export default async function EventDetailPage({ params }: Props) {
       : "Time TBD";
 
   // Build absolute URL for sharing
-  const hdrs = headers();
+  const hdrs = await headers();
   const host =
     hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "localhost:3000";
   const proto =
