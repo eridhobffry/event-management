@@ -10,4 +10,6 @@
 ### Updates
 
 - Landing page hero: single primary CTA to discovery, social proof strip, mobile-first layout with visible focus states.
-- Quick check: `npm run test:landing`
+- Testing
+  - Unit: `npm run test:unit` (Vitest)
+  - E2E: `npm run e2e` (Playwright; auto-starts dev server)

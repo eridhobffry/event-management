@@ -21,9 +21,10 @@ Derived from: `docs/UI_UX_GUIDE_2025.md`, `docs/FEATURES_BENCHMARK.md`, `docs/TE
 - Add lightweight social proof (logos/testimonial) and secondary section linking to events.
 
 Status: Done
+
 - Hero ships with a single primary CTA to `#discover`, compact value‑prop row, and social proof strip.
 - Accessibility: visible focus styles verified via `npm test` (a11y focus test).
-- Test: `tests/landing-hero.test.mjs` validates hero structure/CTA and discovery anchor.
+- Tests: Vitest (`tests/*.test.ts`) validates hero structure/CTA and a11y; Playwright E2E (`e2e/`) validates hero CTA navigation.
 
 ### B) Event Discovery/List
 
