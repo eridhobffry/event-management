@@ -8,7 +8,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import EventsClient from "@/app/events/_components/events-client";
+// Defer discovery UI for faster LCP (client lazy wrapper)
+import EventsClient from "@/app/events/_components/events-client.lazy";
 import { db } from "@/lib/db";
 import { events } from "@/db/schema";
 import { Event } from "@/types/event";

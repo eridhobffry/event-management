@@ -119,4 +119,20 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Ensure visible focus across all interactive elements */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+  /* Increase default tap target size helper */
+  :where(a, button, [role="button"], input[type="checkbox"], input[type="radio"], .tap-target) {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
