@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:landing": "node tests/landing-hero.test.mjs",
+    "test:a11y": "node tests/a11y-focus.test.mjs",
+    "test": "npm run test:landing && npm run test:a11y",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",

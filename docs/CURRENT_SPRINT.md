@@ -20,6 +20,11 @@ Derived from: `docs/UI_UX_GUIDE_2025.md`, `docs/FEATURES_BENCHMARK.md`, `docs/TE
 - Implement immersive but simple hero (full‑bleed visual/video optional), single CTA, minimal copy; strong value prop and scroll cues ([Unbounce examples](https://unbounce.com/landing-page-examples/event-landing-page-examples/), [2025 hero trends](https://sitemile.com/best-hero-marquee-design-trends-for-2025-make-your-website-stand-out/)).
 - Add lightweight social proof (logos/testimonial) and secondary section linking to events.
 
+Status: Done
+- Hero ships with a single primary CTA to `#discover`, compact value‑prop row, and social proof strip.
+- Accessibility: visible focus styles verified via `npm test` (a11y focus test).
+- Test: `tests/landing-hero.test.mjs` validates hero structure/CTA and discovery anchor.
+
 ### B) Event Discovery/List
 
 - Card/grid with clear date/time, title, location, price badge; mobile cards first.
