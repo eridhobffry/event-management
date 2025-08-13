@@ -171,7 +171,7 @@ export default async function EventRegistrationPage({
                   Register for this Event
                 </CardTitle>
                 <p className="text-zinc-400">
-                  Fill in your details to secure your spot
+                  Guest checkout, 2 simple steps. No account required.
                 </p>
               </CardHeader>
 

@@ -8,7 +8,7 @@ Derived from: `docs/UI_UX_GUIDE_2025.md`, `docs/FEATURES_BENCHMARK.md`, `docs/TE
 
 ## ✅ Definition of Done
 
-- New marketing landing with clear hero, social proof, primary CTA, and fast LCP.
+- New marketing landing with clear hero, social proof, primary CTA, and fast LCP. (Hero shipped: single CTA to discovery, social proof strip, mobile-first)
 - Event discovery and event detail page refined with prominent “Get tickets/RSVP” CTA.
 - Registration/checkout flow: guest by default, progress indicator, trust signals, errors in‑place, fully mobile‑optimized.
 - Accessibility (WCAG AA focus states/contrast) and performance (Core Web Vitals) pass.
@@ -19,6 +19,12 @@ Derived from: `docs/UI_UX_GUIDE_2025.md`, `docs/FEATURES_BENCHMARK.md`, `docs/TE
 
 - Implement immersive but simple hero (full‑bleed visual/video optional), single CTA, minimal copy; strong value prop and scroll cues ([Unbounce examples](https://unbounce.com/landing-page-examples/event-landing-page-examples/), [2025 hero trends](https://sitemile.com/best-hero-marquee-design-trends-for-2025-make-your-website-stand-out/)).
 - Add lightweight social proof (logos/testimonial) and secondary section linking to events.
+
+Status: Done
+
+- Hero ships with a single primary CTA to `#discover`, compact value‑prop row, and social proof strip.
+- Accessibility: visible focus styles verified via `npm test` (a11y focus test).
+- Tests: Vitest (`tests/*.test.ts`) validates hero structure/CTA and a11y; Playwright E2E (`e2e/`) validates hero CTA navigation.
 
 ### B) Event Discovery/List
 
@@ -49,7 +55,7 @@ Derived from: `docs/UI_UX_GUIDE_2025.md`, `docs/FEATURES_BENCHMARK.md`, `docs/TE
 
 - Mobile first: thumb‑reachable CTAs, single column, sticky primary action.
 - Guest checkout works without account; errors are inline and specific.
-- No layout shift; LCP ≤ 2s on home and event pages.
+- No layout shift; LCP ≤ 2s on home and event pages. (Home hero optimized: single image-less gradient, minimal DOM)
 - Keyboard navigation and visible focus across interactive elements.
 
 ## 📦 Git Plan
