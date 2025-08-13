@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   Calendar,
   MapPin,
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Event } from "@/types/event";
 import { listCategories, inferEventCategory } from "@/lib/event-category";
 
@@ -35,6 +36,9 @@ export default function EventsClient({ events }: { events: Event[] }) {
   const [city, setCity] = useState<string>("all");
   const [dateRange, setDateRange] = useState<string>("all");
   const [category, setCategory] = useState<string>("all");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initializedFromUrl = useRef(false);
 
   const cities = useMemo(() => {
     const set = new Set<string>();
@@ -112,6 +116,44 @@ export default function EventsClient({ events }: { events: Event[] }) {
       });
   }, [query, events, city, category, isWithinRange]);
 
+  // Initialize filters from URL on first render
+  useEffect(() => {
+    if (initializedFromUrl.current) return;
+    const q = searchParams.get("q") || "";
+    const c = searchParams.get("city") || "all";
+    const cat = searchParams.get("category") || "all";
+    const d = searchParams.get("date") || "all";
+    setQuery(q);
+    setCity(c);
+    setCategory(cat);
+    setDateRange(d);
+    initializedFromUrl.current = true;
+  }, [searchParams]);
+
+  // Persist filters to URL when they change
+  useEffect(() => {
+    if (!initializedFromUrl.current) return;
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    if (query.trim()) params.set("q", query.trim());
+    else params.delete("q");
+    if (city !== "all") params.set("city", city);
+    else params.delete("city");
+    if (category !== "all") params.set("category", category);
+    else params.delete("category");
+    if (dateRange !== "all") params.set("date", dateRange);
+    else params.delete("date");
+    const qs = params.toString();
+    router.replace(`/events${qs ? `?${qs}` : ""}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, city, category, dateRange]);
+
+  const resetAll = () => {
+    setQuery("");
+    setCity("all");
+    setCategory("all");
+    setDateRange("all");
+  };
+
   // Helpers
   const formatDate = (date: Date | string | null) => {
     if (!date) return "Date TBD";
@@ -137,7 +179,7 @@ export default function EventsClient({ events }: { events: Event[] }) {
     <>
       {/* Filters + Search */}
       <div className="mx-auto max-w-5xl mb-8 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-zinc-400" aria-hidden="true" />
             <span className="text-sm text-zinc-400">Filters</span>
@@ -191,6 +233,15 @@ export default function EventsClient({ events }: { events: Event[] }) {
               <SelectItem value="month">This month</SelectItem>
             </SelectContent>
           </Select>
+
+          <Button
+            variant="outline"
+            onClick={resetAll}
+            aria-label="Reset all filters"
+            className="border-white/10 text-zinc-200"
+          >
+            Reset all
+          </Button>
         </div>
 
         <div className="relative">
@@ -202,6 +253,13 @@ export default function EventsClient({ events }: { events: Event[] }) {
             className="pl-12 h-12 bg-white/5 backdrop-blur-sm border-white/10 text-white placeholder:text-zinc-500 focus:border-indigo-500/50 focus:bg-white/10 transition-all duration-200"
             aria-label="Search events"
           />
+        </div>
+
+        <div className="flex items-center justify-between text-sm text-zinc-400">
+          <div>
+            Showing <span className="text-zinc-200">{filtered.length}</span> of
+            <span className="text-zinc-200"> {events.length}</span> events
+          </div>
         </div>
       </div>
 

@@ -32,6 +32,7 @@ Status: Done
 - Filters: city/date/type (defer advanced facets).
   - Implemented: city, date, and category/type (heuristic from name/description) with improved empty state and quick clear actions.
   - Tests: unit for category inference; E2E for filter flow and empty state.
+  - Small wins: added Reset all and URL query param persistence; results count display.
 
 ### C) Event Detail
 

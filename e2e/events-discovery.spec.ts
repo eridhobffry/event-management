@@ -31,4 +31,12 @@ test("discovery filters by category and shows empty state with clear buttons", a
   await page.getByRole("button", { name: /Clear category/i }).click();
   await page.getByLabel(/Search events/i).fill("");
   await expect(page.getByText(/React Conference 2025/i)).toBeVisible();
+
+  // Reset all button clears filters and query
+  const resetAll = page.getByRole("button", { name: /Reset all/i });
+  await expect(resetAll).toBeVisible();
+  await resetAll.click();
+  await expect(page).toHaveURL(/\/events(\?|$)/);
+  // Should show multiple events after reset
+  await expect(page.getByText(/React Conference 2025/i)).toBeVisible();
 });
