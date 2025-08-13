@@ -37,7 +37,7 @@ export default async function Page() {
   const isAdmin = userRoleData.some((r) => r.roleName === "Admin");
 
   if (!isAdmin) {
-    redirect("/");
+    redirect("/dashboard/events");
   }
 
   const data = await db.select().from(users);
