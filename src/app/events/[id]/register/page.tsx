@@ -1,4 +1,13 @@
-import { Calendar, MapPin, Users, ArrowLeft, Clock, Mail } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Users,
+  ArrowLeft,
+  Clock,
+  Mail,
+  Lock,
+  ShieldCheck,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import RegisterForm from "./register-form";
@@ -177,6 +186,36 @@ export default async function EventRegistrationPage({
 
               <CardContent>
                 <RegisterForm eventId={event.id} />
+              </CardContent>
+            </Card>
+
+            {/* Sticky Order Summary & Trust Cues */}
+            <Card className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-lg sticky top-24">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-white">Order Summary</div>
+                    <div className="text-xs text-zinc-400">
+                      Details → Confirm
+                    </div>
+                  </div>
+                  <ShieldCheck
+                    className="w-5 h-5 text-emerald-400"
+                    aria-hidden
+                  />
+                </div>
+                <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-zinc-300">
+                  <div className="flex items-center justify-between">
+                    <span>1 × RSVP ticket</span>
+                    <span className="text-emerald-400">Free</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-zinc-500">
+                  <Lock className="w-3 h-3" aria-hidden />
+                  <span>
+                    Secure — No payment required. You can cancel anytime.
+                  </span>
+                </div>
               </CardContent>
             </Card>
 

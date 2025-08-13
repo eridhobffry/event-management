@@ -61,6 +61,22 @@ export default function RegisterForm({ eventId }: Props) {
         setIsSuccess(true);
         toast.success("Registration successful! Redirecting...");
         // Let success animation play for 1.5 seconds before redirect
+        try {
+          if (typeof window !== "undefined") {
+            const payload = {
+              eventId,
+              attendeeId: res.attendeeId ?? null,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              email: data.email,
+              phone: data.phone,
+            };
+            sessionStorage.setItem(
+              "rsvp_confirmation",
+              JSON.stringify(payload)
+            );
+          }
+        } catch {}
         setTimeout(() => {
           router.push(`/events/${eventId}/register/thanks`);
         }, 1500);
@@ -85,21 +101,19 @@ export default function RegisterForm({ eventId }: Props) {
 
   return (
     <Form {...form}>
-      {/* Progress indicator */}
-      <div
-        className="flex items-center justify-center gap-2 mb-4"
-        aria-label="Progress"
-      >
-        <div
-          className={`h-2 w-2 rounded-full ${
-            step >= 1 ? "bg-indigo-400" : "bg-zinc-700"
-          }`}
-        />
-        <div
-          className={`h-2 w-2 rounded-full ${
-            step >= 2 ? "bg-indigo-400" : "bg-zinc-700"
-          }`}
-        />
+      {/* Progress indicator with labels */}
+      <div className="mb-4" aria-label="Progress">
+        <div className="flex items-center justify-between text-xs text-zinc-400 mb-2">
+          <span className={step === 1 ? "text-white" : ""}>Details</span>
+          <span className={step === 2 ? "text-white" : ""}>Confirm</span>
+        </div>
+        <div className="h-1 w-full bg-zinc-800 rounded">
+          <div
+            className={`h-1 bg-indigo-500 rounded transition-all duration-300 ${
+              step === 1 ? "w-1/2" : "w-full"
+            }`}
+          />
+        </div>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -192,6 +206,9 @@ export default function RegisterForm({ eventId }: Props) {
               <div className="flex items-center justify-between">
                 <span>1 × RSVP ticket</span>
                 <span className="text-emerald-400">Free</span>
+              </div>
+              <div className="mt-2 text-xs text-zinc-500">
+                No charges. You’ll receive an email confirmation.
               </div>
             </div>
             <Button
