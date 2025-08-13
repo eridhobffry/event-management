@@ -38,6 +38,13 @@ Status: Done
 
 - Above‑the‑fold: title, date/time, venue map link, price/free badge, primary CTA.
 - Sections: about, lineup/schedule, FAQs, share.
+  
+Status: Done
+
+- Implemented above‑the‑fold header with title, formatted date/time, venue Google Maps link, Free badge, and primary “Get Tickets” CTA in `src/app/events/[id]/page.tsx`.
+- Added sections: About, Schedule (placeholder timeline), FAQs, Share (WA/IG/X/Copy) via `ShareActions` client component, and “Add to Calendar” (Google/ICS). Included “Similar events” rail placeholder.
+- Added absolute URL generation for sharing, ICS download, and Google Calendar deep link.
+- Tests: All unit and E2E tests pass (landing CTA, discovery filters). No regressions.
 
 ### D) Registration / Checkout (free RSVP baseline)
 
