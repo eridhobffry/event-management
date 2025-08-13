@@ -13,3 +13,4 @@
 - Testing
   - Unit: `npm run test:unit` (Vitest)
   - E2E: `npm run e2e` (Playwright; auto-starts dev server)
+- Event discovery: added city/date/category filters and improved empty states with quick clear actions. See tests `tests/events-discovery.test.ts` and `e2e/events-discovery.spec.ts`.

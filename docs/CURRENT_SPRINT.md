@@ -30,6 +30,8 @@ Status: Done
 
 - Card/grid with clear date/time, title, location, price badge; mobile cards first.
 - Filters: city/date/type (defer advanced facets).
+  - Implemented: city, date, and category/type (heuristic from name/description) with improved empty state and quick clear actions.
+  - Tests: unit for category inference; E2E for filter flow and empty state.
 
 ### C) Event Detail
 

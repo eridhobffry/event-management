@@ -28,11 +28,13 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import { Event } from "@/types/event";
+import { listCategories, inferEventCategory } from "@/lib/event-category";
 
 export default function EventsClient({ events }: { events: Event[] }) {
   const [query, setQuery] = useState("");
   const [city, setCity] = useState<string>("all");
   const [dateRange, setDateRange] = useState<string>("all");
+  const [category, setCategory] = useState<string>("all");
 
   const cities = useMemo(() => {
     const set = new Set<string>();
@@ -91,6 +93,14 @@ export default function EventsClient({ events }: { events: Event[] }) {
           ? true
           : (ev.location || "").toLowerCase().includes(city.toLowerCase())
       )
+      .filter((ev) =>
+        category === "all"
+          ? true
+          : inferEventCategory({
+              name: ev.name,
+              description: ev.description,
+            }) === category
+      )
       .filter((ev) => isWithinRange(ev.date))
       .filter((ev) => {
         if (!q.trim()) return true;
@@ -100,7 +110,7 @@ export default function EventsClient({ events }: { events: Event[] }) {
           (ev.description ?? "").toLowerCase().includes(q)
         );
       });
-  }, [query, events, city, isWithinRange]);
+  }, [query, events, city, category, isWithinRange]);
 
   // Helpers
   const formatDate = (date: Date | string | null) => {
@@ -127,7 +137,7 @@ export default function EventsClient({ events }: { events: Event[] }) {
     <>
       {/* Filters + Search */}
       <div className="mx-auto max-w-5xl mb-8 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-zinc-400" aria-hidden="true" />
             <span className="text-sm text-zinc-400">Filters</span>
@@ -143,6 +153,23 @@ export default function EventsClient({ events }: { events: Event[] }) {
             <SelectContent className="bg-zinc-900 border-white/10">
               <SelectItem value="all">All cities</SelectItem>
               {cities.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger
+              aria-label="Filter by category"
+              className="bg-white/5 border-white/10 text-white"
+            >
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-900 border-white/10">
+              <SelectItem value="all">All categories</SelectItem>
+              {listCategories(events).map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>
@@ -179,8 +206,39 @@ export default function EventsClient({ events }: { events: Event[] }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-20 text-zinc-400">
-          No events match your search.
+        <div className="py-20">
+          <div className="mx-auto max-w-md text-center">
+            <div className="text-2xl font-semibold text-white mb-2">
+              No results
+            </div>
+            <p className="text-zinc-400 mb-6">
+              We couldn&apos;t find events matching your filters. Try adjusting
+              your search or explore all events.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setCity("all")}
+                className="border-white/10 text-zinc-200"
+              >
+                Clear city
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setCategory("all")}
+                className="border-white/10 text-zinc-200"
+              >
+                Clear category
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setDateRange("all")}
+                className="border-white/10 text-zinc-200"
+              >
+                Clear date
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -228,7 +286,10 @@ export default function EventsClient({ events }: { events: Event[] }) {
 
                   <div className="flex items-center text-sm text-zinc-300">
                     <Users className="w-4 h-4 mr-3 text-emerald-400" />
-                    Registration Open
+                    {inferEventCategory({
+                      name: event.name,
+                      description: event.description,
+                    })}
                   </div>
                 </div>
               </CardContent>
