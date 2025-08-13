@@ -8,7 +8,7 @@ Derived from: `docs/UI_UX_GUIDE_2025.md`, `docs/FEATURES_BENCHMARK.md`, `docs/TE
 
 ## ✅ Definition of Done
 
-- New marketing landing with clear hero, social proof, primary CTA, and fast LCP.
+- New marketing landing with clear hero, social proof, primary CTA, and fast LCP. (Hero shipped: single CTA to discovery, social proof strip, mobile-first)
 - Event discovery and event detail page refined with prominent “Get tickets/RSVP” CTA.
 - Registration/checkout flow: guest by default, progress indicator, trust signals, errors in‑place, fully mobile‑optimized.
 - Accessibility (WCAG AA focus states/contrast) and performance (Core Web Vitals) pass.
@@ -49,7 +49,7 @@ Derived from: `docs/UI_UX_GUIDE_2025.md`, `docs/FEATURES_BENCHMARK.md`, `docs/TE
 
 - Mobile first: thumb‑reachable CTAs, single column, sticky primary action.
 - Guest checkout works without account; errors are inline and specific.
-- No layout shift; LCP ≤ 2s on home and event pages.
+- No layout shift; LCP ≤ 2s on home and event pages. (Home hero optimized: single image-less gradient, minimal DOM)
 - Keyboard navigation and visible focus across interactive elements.
 
 ## 📦 Git Plan

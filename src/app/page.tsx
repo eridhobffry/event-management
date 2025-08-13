@@ -8,7 +8,27 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function Home() {
+import EventsClient from "@/app/events/_components/events-client";
+import { db } from "@/lib/db";
+import { events } from "@/db/schema";
+import { Event } from "@/types/event";
+import { eq } from "drizzle-orm";
+import { stackServerApp } from "@/stack";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function Home() {
+  let activeEvents: Event[] = [];
+  try {
+    activeEvents = await db
+      .select()
+      .from(events)
+      .where(eq(events.isActive, true));
+  } catch {
+    activeEvents = [];
+  }
+  const user = await stackServerApp.getUser().catch(() => null);
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-zinc-950 via-black to-zinc-950">
       {/* Hero */}
@@ -24,22 +44,23 @@ export default function Home() {
               real-time analytics. Built for modern organizers and delightful
               attendee experiences.
             </p>
-            <div className="mt-8 flex items-center justify-center gap-3">
+            <div className="mt-8 flex items-center justify-center">
               <Button
                 asChild
                 size="lg"
                 className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500"
               >
-                <Link href="/events">Browse Events</Link>
+                <Link href="#discover" aria-label="Discover events">
+                  Discover events
+                </Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
-              >
-                <Link href="/organizer/overview">Create an Event</Link>
-              </Button>
+            </div>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-zinc-300 text-sm">
+              <span>Fast checkout</span>
+              <span className="h-1 w-1 rounded-full bg-zinc-700" />
+              <span>QR check-in</span>
+              <span className="h-1 w-1 rounded-full bg-zinc-700" />
+              <span>Mobile-first</span>
             </div>
             <p className="mt-4 text-xs text-zinc-500">
               LCP-optimized hero • WCAG AA contrast • minimal layout shift
@@ -61,97 +82,69 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-10">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>🎟️ Manage Events</CardTitle>
-              <CardDescription>Create and manage your events</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/dashboard/events">Event Dashboard</Link>
-              </Button>
-            </CardContent>
-          </Card>
+      {/* Discovery feed with filters */}
+      <main id="discover" className="container mx-auto px-4 py-10">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-white mb-1">
+            Find something to do
+          </h2>
+          <p className="text-sm text-zinc-400">
+            Search and filter events happening near you
+          </p>
+        </div>
+        <EventsClient events={activeEvents} />
+      </main>
 
+      {/* Organizer callout / tools */}
+      {user ? (
+        <div className="container mx-auto px-4 pb-12">
+          <h3 className="text-lg font-semibold text-white mb-4">
+            Organizer tools
+          </h3>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>🎟️ Manage Events</CardTitle>
+                <CardDescription>Create and manage your events</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button asChild className="w-full" variant="outline">
+                  <Link href="/dashboard/events">Event Dashboard</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="md:col-span-2 lg:col-span-1">
+              <CardHeader>
+                <CardTitle>🔑 Admin</CardTitle>
+                <CardDescription>
+                  Manage events, users, and settings.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/dashboard">
+                  <Button className="w-full">Go to Dashboard</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        <div className="container mx-auto px-4 pb-12">
           <Card>
             <CardHeader>
-              <CardTitle>👥 Attendees</CardTitle>
+              <CardTitle>Are you an organizer?</CardTitle>
               <CardDescription>
-                Manage registrations and check-ins
+                Create events, sell tickets, and grow your audience.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/attendees">View Attendees</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>📊 Analytics</CardTitle>
-              <CardDescription>View event performance metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/analytics">View Analytics</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-2 lg:col-span-1">
-            <CardHeader>
-              <CardTitle>🔑 Admin</CardTitle>
-              <CardDescription>
-                Manage events, users, and settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/dashboard">
-                <Button className="w-full">Go to Dashboard</Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-2 lg:col-span-1">
-            <CardHeader>
-              <CardTitle>🔒 Auth</CardTitle>
-              <CardDescription>View event performance metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild className="w-full">
-                <Link href="/handler/sign-in">Sign In</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-2 lg:col-span-1">
-            <CardHeader>
-              <CardTitle>🔒 Auth</CardTitle>
-              <CardDescription>View event performance metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="outline">
-                <Link href="/handler/sign-up">Sign Up</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-2 lg:col-span-1">
-            <CardHeader>
-              <CardTitle>🔒 Auth</CardTitle>
-              <CardDescription>View event performance metrics</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button asChild variant="secondary">
-                <Link href="/handler/account-settings">Account Settings</Link>
+              <Button asChild>
+                <Link href="/organizer/overview">Get started for free</Link>
               </Button>
             </CardContent>
           </Card>
         </div>
-      </div>
+      )}
     </div>
   );
 }
