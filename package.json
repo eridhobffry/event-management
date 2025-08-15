@@ -10,6 +10,10 @@
     "test:landing": "node tests/landing-hero.test.mjs",
     "test:a11y": "node tests/a11y-focus.test.mjs",
     "test": "vitest run",
+    "lhci:build": "next build && next start -p 3005",
+    "lhci:collect": "lhci collect --url=http://localhost:3005/ --url=http://localhost:3005/events --numberOfRuns=3",
+    "lhci:assert": "lhci assert --config=./lighthouserc.json",
+    "lhci": "start-server-and-test lhci:build http://localhost:3005 lhci:collect && npm run lhci:assert",
     "test:unit": "vitest",
     "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
@@ -87,6 +91,8 @@
     "tsx": "^4.20.3",
     "typescript": "^5",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@lhci/cli": "^0.13.0",
+    "start-server-and-test": "^2.0.10"
   }
 }

@@ -17,7 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { headers } from "next/headers";
-import ShareActions from "./_components/share-actions";
+// Defer share actions; not critical to LCP (client lazy wrapper)
+import ShareActions from "./_components/share-actions.lazy";
 
 interface Props {
   params: Promise<{ id: string }>;
