@@ -160,8 +160,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <Separator className="my-4" />
+        <Separator className="my-3 opacity-10" />
         <NavDocuments items={data.documents} />
+        <Separator className="my-3 opacity-10" />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { events } from "@/db/schema";
 import { Event } from "@/types/event";
 import { eq } from "drizzle-orm";
+import { stackServerApp } from "@/stack";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,9 @@ export default async function PublicEventsPage() {
     activeEvents = [];
   }
 
+  // Check auth to adjust CTA
+  const user = await stackServerApp.getUser();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-black to-zinc-950 flex flex-col">
       {/* Header */}
@@ -37,13 +41,23 @@ export default async function PublicEventsPage() {
                 Find and join amazing events happening near you
               </p>
             </div>
-            <Link
-              href="/dashboard"
-              className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors duration-200 group"
-            >
-              Event Organizer? Sign In
-              <ArrowRight className="w-3 h-3 ml-1 inline-block group-hover:translate-x-1 transition-transform duration-200" />
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors duration-200 group"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-3 h-3 ml-1 inline-block group-hover:translate-x-1 transition-transform duration-200" />
+              </Link>
+            ) : (
+              <Link
+                href="/handler/sign-in"
+                className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors duration-200 group"
+              >
+                Event Organizer? Sign In
+                <ArrowRight className="w-3 h-3 ml-1 inline-block group-hover:translate-x-1 transition-transform duration-200" />
+              </Link>
+            )}
           </div>
         </div>
       </header>
