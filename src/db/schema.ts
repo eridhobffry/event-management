@@ -6,3 +6,7 @@ export * from "./schema/role_permissions";
 export * from "./schema/roles";
 export * from "./schema/user_roles";
 export * from "./schema/users";
+export * from "./schema/ticket_types";
+export * from "./schema/orders";
+export * from "./schema/order_items";
+export * from "./schema/tickets";
