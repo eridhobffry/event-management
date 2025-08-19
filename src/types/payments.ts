@@ -22,3 +22,11 @@ export type StripePublicConfig = {
   publishableKey: string;
   mode: "test" | "live";
 };
+
+export type UITicketType = {
+  id: string;
+  name: string;
+  priceCents: number;
+  currency: string;
+  available: number;
+};

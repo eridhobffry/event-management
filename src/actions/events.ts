@@ -3,10 +3,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
-import { events } from "@/db/schema";
+import { events, ticketTypes } from "@/db/schema";
 import { stackServerApp } from "@/stack";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { eventFormSchema, type EventFormInput } from "@/schemas/events";
+import type { UITicketType } from "@/types/payments";
 
 export async function createEvent(values: EventFormInput) {
   const user = await stackServerApp.getUser();
@@ -116,4 +117,43 @@ export async function deleteEvent(id: string) {
   }
 
   revalidatePath("/dashboard/events");
+}
+
+// Read helper: fetch an active event and its active ticket types, mapped for UI
+type EventRow = typeof events.$inferSelect;
+export async function getEventAndActiveTicketTypes(
+  eventId: string
+): Promise<{ event: EventRow; ticketTypes: UITicketType[] } | null> {
+  const [event] = await db
+    .select()
+    .from(events)
+    .where(eq(events.id, eventId))
+    .limit(1);
+
+  if (!event || !event.isActive) return null;
+
+  const rows = await db
+    .select({
+      id: ticketTypes.id,
+      name: ticketTypes.name,
+      priceCents: ticketTypes.priceCents,
+      currency: ticketTypes.currency,
+      quantityTotal: ticketTypes.quantityTotal,
+      quantitySold: ticketTypes.quantitySold,
+      isActive: ticketTypes.isActive,
+    })
+    .from(ticketTypes)
+    .where(and(eq(ticketTypes.eventId, eventId), eq(ticketTypes.isActive, true)));
+
+  const mapped: UITicketType[] = rows
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      priceCents: r.priceCents,
+      currency: r.currency,
+      available: Math.max(0, (r.quantityTotal ?? 0) - (r.quantitySold ?? 0)),
+    }))
+    .filter((t) => t.available > 0);
+
+  return { event, ticketTypes: mapped };
 }
