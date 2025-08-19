@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import QRCode from "qrcode";
 import { db } from "@/lib/db";
-import { orders, orderItems, tickets, ticketTypes } from "@/db/schema";
+import { orders, orderItems, tickets, ticketTypes, events } from "@/db/schema";
 import { eq, sql, count } from "drizzle-orm";
+import { sendEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,19 +60,19 @@ export async function POST(req: Request) {
         const metaOrderId = (paymentIntent.metadata?.order_id as string) || null;
         const [orderRow] = metaOrderId
           ? await db
-              .select({ id: orders.id, status: orders.status, eventId: orders.eventId })
+              .select({ id: orders.id, status: orders.status, eventId: orders.eventId, email: orders.email })
               .from(orders)
               .where(eq(orders.id, metaOrderId))
               .limit(1)
           : await db
-              .select({ id: orders.id, status: orders.status, eventId: orders.eventId })
+              .select({ id: orders.id, status: orders.status, eventId: orders.eventId, email: orders.email })
               .from(orders)
               .where(eq(orders.paymentIntentId, paymentIntent.id))
               .limit(1);
 
         if (!orderRow) break; // Not our order; ignore
 
-        await db.transaction(async (tx) => {
+        const txResult = await db.transaction(async (tx) => {
           // Idempotency: if already paid or tickets exist, do nothing
           const [current] = await tx
             .select({ status: orders.status })
@@ -78,7 +80,9 @@ export async function POST(req: Request) {
             .where(eq(orders.id, orderRow.id))
             .limit(1);
 
-          if (current?.status === "paid") return;
+          if (current?.status === "paid") {
+            return { createdCount: 0, tokens: [] as string[] };
+          }
 
           const [{ value: existingTickets }] = await tx
             .select({ value: count() })
@@ -90,7 +94,7 @@ export async function POST(req: Request) {
               .update(orders)
               .set({ status: "paid", updatedAt: sql`now()` })
               .where(eq(orders.id, orderRow.id));
-            return;
+            return { createdCount: 0, tokens: [] as string[] };
           }
 
           // Update order status to paid
@@ -118,8 +122,13 @@ export async function POST(req: Request) {
               });
             }
           }
+          let tokens: string[] = [];
           if (values.length > 0) {
-            await tx.insert(tickets).values(values);
+            const inserted = await tx
+              .insert(tickets)
+              .values(values)
+              .returning({ token: tickets.qrCodeToken });
+            tokens = inserted.map((r) => r.token);
           }
 
           // Increment quantity_sold per ticket type
@@ -129,7 +138,60 @@ export async function POST(req: Request) {
               .set({ quantitySold: sql`${ticketTypes.quantitySold} + ${it.quantity}` })
               .where(eq(ticketTypes.id, it.ticketTypeId));
           }
+          return { createdCount: tokens.length, tokens };
         });
+
+        // Send confirmation email with QR codes only when tickets were created now
+        if (txResult?.createdCount && txResult.createdCount > 0) {
+          try {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+            const [evt] = await db
+              .select({ name: events.name, date: events.date, location: events.location })
+              .from(events)
+              .where(eq(events.id, orderRow.eventId))
+              .limit(1);
+
+            const qrBlocks: { img: string; url: string }[] = [];
+            for (const token of txResult.tokens) {
+              const url = new URL(`/api/tickets/check-in`, baseUrl);
+              url.searchParams.set("token", token);
+              const dataUrl = await QRCode.toDataURL(url.toString(), { width: 256, margin: 1 });
+              qrBlocks.push({ img: dataUrl, url: url.toString() });
+            }
+
+            const dateStr = evt?.date ? new Date(evt.date).toLocaleString() : "";
+            const subject = `${evt?.name ?? "Your Event"} — Your tickets and QR codes`;
+            const qrHtml = qrBlocks
+              .map(
+                (b, i) => `
+                  <div style="margin:16px 0;padding:12px;border:1px solid #eee;border-radius:8px;text-align:center;">
+                    <div style="font-size:14px;color:#555;margin-bottom:8px;">Ticket ${i + 1}</div>
+                    <img src="${b.img}" alt="Ticket QR Code" style="display:block;margin:0 auto;background:#fff;border-radius:4px;" width="192" height="192" />
+                    <div style="font-size:12px;color:#777;margin-top:8px;">If scanning fails, use this link: <a href="${b.url}">${b.url}</a></div>
+                  </div>
+                `
+              )
+              .join("");
+
+            const html = `
+              <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; color: #111;">
+                <h2 style="margin-bottom: 4px;">Your tickets are ready 🎟️</h2>
+                <p style="margin: 0 0 16px;">Thank you for your purchase. Please find your QR codes below.</p>
+                ${evt ? `<div style="font-size:14px;color:#444;margin-bottom:16px;"><strong>${evt.name}</strong>${dateStr ? ` • ${dateStr}` : ""}${evt.location ? ` • ${evt.location}` : ""}</div>` : ""}
+                ${qrHtml}
+                <p style="font-size:12px;color:#666;margin-top:16px;">Show these QR codes at the entrance for check‑in. Keep this email handy.</p>
+              </div>
+            `;
+
+            if (orderRow.email) {
+              await sendEmail({ to: orderRow.email, subject, html });
+              console.log("✅ Sent ticket confirmation email with", txResult.createdCount, "QR(s) to", orderRow.email);
+            }
+          } catch (mailErr) {
+            console.error("❌ Failed to send confirmation email:", mailErr);
+            // Do not throw to avoid Stripe retries causing duplicate emails
+          }
+        }
         break;
       }
       case "payment_intent.payment_failed": {
