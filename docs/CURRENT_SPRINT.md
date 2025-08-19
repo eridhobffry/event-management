@@ -61,6 +61,19 @@ Status: Done
 
 - Archive or merge `sprint-planning/` into `docs/` and remove obsolete duplicates.
 
+### G) Payments & Ticketing
+
+Status: In progress
+
+- Stripe webhook issues tickets on payment success and emails QR codes with fallback links.
+- Secure check-in API at `/api/tickets/check-in` toggles check-in; requires organizer auth.
+- Organizer Scanner UI baseline added at `/organizer/check-in` (paste/scan token, instant feedback).
+
+Next:
+
+- PayPal parity: capture flow to mark orders paid, issue tickets, and send the same QR email.
+- Tests: webhook idempotency (email only when tickets created), check-in token toggle.
+
 ## 🔬 QA Checklist
 
 - Mobile first: thumb‑reachable CTAs, single column, sticky primary action.
