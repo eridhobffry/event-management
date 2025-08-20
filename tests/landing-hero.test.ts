@@ -1,10 +1,11 @@
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { expect, test } from "vitest";
 
-const ROOT = "/Users/eridhobufferyrollian/Documents/Project/event-management";
+const ROOT = process.env.GITHUB_WORKSPACE || process.cwd();
 
 test("landing hero: single CTA to discovery, anchor present, social proof text", async () => {
-  const content = await readFile(`${ROOT}/src/app/page.tsx`, "utf8");
+  const content = await readFile(join(ROOT, "src/app/page.tsx"), "utf8");
   const heroMarker = "/* Hero */";
   const socialMarker = "/* Social proof */";
   const heroStart = content.indexOf(heroMarker);
