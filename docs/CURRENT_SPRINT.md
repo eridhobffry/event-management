@@ -38,7 +38,7 @@ Status: Done
 
 - Above‑the‑fold: title, date/time, venue map link, price/free badge, primary CTA.
 - Sections: about, lineup/schedule, FAQs, share.
-  
+
 Status: Done
 
 - Implemented above‑the‑fold header with title, formatted date/time, venue Google Maps link, Free badge, and primary “Get Tickets” CTA in `src/app/events/[id]/page.tsx`.
@@ -66,13 +66,13 @@ Status: Done
 Status: In progress
 
 - Stripe webhook issues tickets on payment success and emails QR codes with fallback links.
-- Secure check-in API at `/api/tickets/check-in` toggles check-in; requires organizer auth.
+- Secure check-in API provides explicit, idempotent operations: `POST /api/tickets/check-in` and `POST /api/tickets/uncheck`. Both accept `ticketId` and `actor`, reject redundant state changes, and record actor/timestamp for audit. Designed to avoid race conditions via last-writer or optimistic concurrency controls. Requires organizer auth.
 - Organizer Scanner UI baseline added at `/organizer/check-in` (paste/scan token, instant feedback).
 
 Next:
 
 - PayPal parity: capture flow to mark orders paid, issue tickets, and send the same QR email.
-- Tests: webhook idempotency (email only when tickets created), check-in token toggle.
+- Tests: webhook idempotency (email only when tickets created), check-in/uncheck idempotency and audit logging.
 
 ## CI / Infra Update (Aug 20, 2025)
 
