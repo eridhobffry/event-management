@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,9 @@ function extractToken(raw: string): string | null {
 export default function CheckInClient() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [supportsBarcode, setSupportsBarcode] = useState<boolean>(false);
   const [result, setResult] = useState<
     | { ok: true; ticketId: string; checkedIn: boolean; checkedInAt: string | null }
     | { ok: false; error?: string }
@@ -35,6 +38,21 @@ export default function CheckInClient() {
   >(null);
 
   const token = useMemo(() => extractToken(input), [input]);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    // Feature detection for BarcodeDetector
+    setSupportsBarcode(typeof window !== "undefined" && "BarcodeDetector" in window);
+    return () => {
+      // Cleanup on unmount
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
 
   const handleSubmit = useCallback(async () => {
     setResult(null);
@@ -61,6 +79,82 @@ export default function CheckInClient() {
     }
   }, [token]);
 
+  const stopCamera = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setScanning(false);
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null);
+    try {
+      const constraints: MediaStreamConstraints = {
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      const video = videoRef.current;
+      if (!video) throw new Error("Video element missing");
+      video.srcObject = stream;
+      await video.play();
+      setScanning(true);
+
+      type DetectedCode = { rawValue: string };
+      type BarcodeDetectorInstance = { detect: (source: CanvasImageSource) => Promise<DetectedCode[]> };
+      type BarcodeDetectorCtor = new (opts?: { formats?: string[] }) => BarcodeDetectorInstance;
+      const BarcodeDetectorCtorRef = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
+      if (!BarcodeDetectorCtorRef) throw new Error("BarcodeDetector not available");
+      const detector = new BarcodeDetectorCtorRef({ formats: ["qr_code"] });
+      const canvas = canvasRef.current ?? document.createElement("canvas");
+      if (!canvasRef.current) canvasRef.current = canvas;
+      const ctx = canvas.getContext("2d");
+
+      const loop = async () => {
+        if (!video || video.readyState < 2 || !ctx) {
+          rafRef.current = requestAnimationFrame(loop);
+          return;
+        }
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        if (!vw || !vh) {
+          rafRef.current = requestAnimationFrame(loop);
+          return;
+        }
+        canvas.width = vw;
+        canvas.height = vh;
+        ctx.drawImage(video, 0, 0, vw, vh);
+        try {
+          const barcodes = await detector.detect(canvas);
+          if (barcodes && barcodes.length > 0) {
+            const raw = barcodes[0].rawValue as string;
+            const t = extractToken(raw);
+            if (t) {
+              setInput(t);
+              stopCamera();
+              // Auto submit for speed
+              setTimeout(() => {
+                void handleSubmit();
+              }, 50);
+              return;
+            }
+          }
+        } catch {
+          // swallow decode errors; continue loop
+        }
+        rafRef.current = requestAnimationFrame(loop);
+      };
+      rafRef.current = requestAnimationFrame(loop);
+    } catch (err) {
+      setCameraError(err instanceof Error ? err.message : "Camera error");
+      stopCamera();
+    }
+  }, [handleSubmit, stopCamera]);
+
   return (
     <div className="max-w-xl mx-auto p-4">
       <h1 className="text-2xl font-semibold mb-2">Check-in Scanner</h1>
@@ -83,7 +177,7 @@ export default function CheckInClient() {
             }}
           />
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="text-xs text-muted-foreground">
             {token ? (
               <span>
@@ -97,7 +191,26 @@ export default function CheckInClient() {
           <Button onClick={handleSubmit} disabled={!token || loading}>
             {loading ? "Checking..." : "Check in / Undo"}
           </Button>
+          <Button
+            variant="secondary"
+            onClick={() => (scanning ? stopCamera() : startCamera())}
+            disabled={!supportsBarcode}
+          >
+            {scanning ? "Stop Camera" : supportsBarcode ? "Scan with Camera" : "Camera not supported"}
+          </Button>
         </div>
+        {cameraError && (
+          <div className="text-xs text-red-600">{cameraError}</div>
+        )}
+        {scanning && (
+          <div className="relative w-full overflow-hidden rounded-md border">
+            <video ref={videoRef} className="w-full h-auto" muted playsInline />
+            {/* overlay */}
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="w-56 h-56 border-2 border-emerald-500/80 rounded-md shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+            </div>
+          </div>
+        )}
         <Separator />
         <div className="min-h-[56px]">
           {result && result.ok && (
@@ -122,7 +235,7 @@ export default function CheckInClient() {
       </Card>
 
       <div className="text-sm text-muted-foreground mt-4">
-        Tip: if camera scanning is needed, we can add it later. For now, copy/paste from a QR scanner app.
+        Tip: Camera scanning uses the native BarcodeDetector. If unsupported, paste the QR link or token.
       </div>
     </div>
   );

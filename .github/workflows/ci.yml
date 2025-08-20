@@ -9,6 +9,17 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BASE_URL: http://localhost:3050
+      CI: true
+      NEXT_PUBLIC_STACK_PROJECT_ID: ${{ secrets.STACK_PROJECT_ID }}
+      NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: ${{ secrets.STACK_PUBLISHABLE_CLIENT_KEY }}
+      STACK_SECRET_SERVER_KEY: ${{ secrets.STACK_SECRET_SERVER_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+      PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+      PAYPAL_SECRET: ${{ secrets.PAYPAL_SECRET }}
+      PAYPAL_ENV: ${{ secrets.PAYPAL_ENV }}
 
     steps:
       - name: Checkout
@@ -37,14 +48,14 @@ jobs:
       - name: Unit tests (Vitest)
         run: npm run test
 
-      - name: Install Playwright Browsers (Chromium only)
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright Browsers (all)
+        run: npx playwright install --with-deps
 
       - name: E2E tests (Chromium)
-        env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3050
-          CI: true
         run: npx playwright test --project=chromium
+
+      - name: E2E tests (iPhone 12)
+        run: npx playwright test --project=iphone-12
 
       - name: Upload Playwright report
         if: always()
