@@ -16,7 +16,7 @@ vi.mock("qrcode", () => ({
   },
 }));
 
-const constructEvent = vi.fn((_raw: string, _sig: string, _secret: string) => ({
+const constructEvent = vi.fn(() => ({
   id: "evt_1",
   type: "payment_intent.succeeded",
   data: {
@@ -45,19 +45,31 @@ const orderRow = {
 const eventRow = { name: "Sample Event", date: new Date(), location: "Berlin" };
 const orderItemsRows = [{ ticketTypeId: "tt_1", quantity: 2 }];
 
+type OrderStatus = "pending" | "paid";
+type OrderRow = { id: string; status: OrderStatus; eventId: string; email: string };
+type EventRow = { name: string; date: Date; location: string };
+type OrderItemRow = { ticketTypeId: string; quantity: number };
+
+type QueryRow = EventRow | OrderRow | { status: OrderStatus } | { value: number } | OrderItemRow;
+type QueryResult = QueryRow[];
+type ThenableArray = {
+  then: (resolve: (v: QueryResult) => void) => void;
+  limit: (n?: number) => Promise<QueryResult>;
+};
+
 function makeDbLike() {
   const db: Record<string, unknown> = {
     select: (shape?: Record<string, unknown>) => ({
       from: () => ({
         where: () => {
-          const data = ((): any[] => {
+          const data: QueryResult = (() => {
             if (shape && "name" in shape && "date" in shape && "location" in shape) {
               return [eventRow];
             }
-            return [{ ...orderRow, status: orderStatus }];
+            return [{ ...(orderRow as OrderRow), status: orderStatus }];
           })();
-          const thenable: any = {
-            then: (resolve: (v: any) => void) => resolve(data),
+          const thenable: ThenableArray = {
+            then: (resolve) => resolve(data),
             limit: async (n?: number) => (typeof n === "number" ? data.slice(0, n) : data),
           };
           return thenable;
@@ -69,14 +81,14 @@ function makeDbLike() {
         select: (shape?: Record<string, unknown>) => ({
           from: () => ({
             where: () => {
-              const data = ((): any[] => {
+              const data: QueryResult = (() => {
                 if (shape && "status" in shape) return [{ status: orderStatus }];
                 if (shape && Object.prototype.hasOwnProperty.call(shape, "value")) return [{ value: 0 }];
                 if (shape && "ticketTypeId" in shape && "quantity" in shape) return orderItemsRows;
-                return [{ ...orderRow, status: orderStatus }];
+                return [{ ...(orderRow as OrderRow), status: orderStatus }];
               })();
-              const thenable: any = {
-                then: (resolve: (v: any) => void) => resolve(data),
+              const thenable: ThenableArray = {
+                then: (resolve) => resolve(data),
                 limit: async (n?: number) => (typeof n === "number" ? data.slice(0, n) : data),
               };
               return thenable;
@@ -85,22 +97,23 @@ function makeDbLike() {
         }),
         update: () => ({ set: (patch: Record<string, unknown>) => ({ where: async () => {
           if (Object.prototype.hasOwnProperty.call(patch, "status")) {
-            orderStatus = patch.status as typeof orderStatus;
+            orderStatus = patch.status as OrderStatus;
           }
         } }) }),
-        insert: () => ({ values: (vals: unknown[]) => ({ returning: async () => vals.map(() => ({ token: "tok" + Math.random().toString(36).slice(2, 6) })) }) }),
+        insert: () => ({ values: (vals: unknown[]) => ({ returning: async (): Promise<Array<{ token: string }>> => vals.map(() => ({ token: "tok" + Math.random().toString(36).slice(2, 6) })) }) }),
       };
       const result = await cb(tx);
       return result;
     },
     update: () => ({ set: () => ({ where: async () => void 0 }) }),
-    insert: () => ({ values: () => ({ returning: async () => [{ token: "tokA" }, { token: "tokB" }] }) }),
+    insert: () => ({ values: () => ({ returning: async (): Promise<Array<{ token: string }>> => [{ token: "tokA" }, { token: "tokB" }] }) }),
   };
-  return db as unknown as any;
+  return db as unknown as Record<string, unknown>;
 }
 vi.mock("@/lib/db", () => {
   const db = makeDbLike();
-  return { db } as unknown as any;
+  const mod: { db: Record<string, unknown> } = { db };
+  return mod;
 });
 
 async function postOnce() {

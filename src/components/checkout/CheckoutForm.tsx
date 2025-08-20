@@ -288,6 +288,52 @@ export function CheckoutForm({
     setCreating(false);
   }
 
+  const [creatingPayPal, setCreatingPayPal] = useState(false);
+
+  async function createPayPalOrder(values: CheckoutFormValues) {
+    setCreatingPayPal(true);
+    setError(null);
+    try {
+      const items = (
+        Object.entries(values.quantities as Record<string, number>) as [
+          string,
+          number
+        ][]
+      )
+        .filter(([, q]) => q > 0)
+        .map(([ticketTypeId, quantity]) => ({ ticketTypeId, quantity }));
+
+      if (items.length === 0) {
+        throw new Error("Please select at least one ticket");
+      }
+
+      const res = await fetch("/api/paypal/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId, email: values.email, items }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Failed to create PayPal order");
+      }
+      const data = (await res.json()) as {
+        orderId: string;
+        paypalOrderId: string;
+        approvalUrl?: string;
+      };
+      setOrderId(data.orderId);
+      if (data.approvalUrl) {
+        window.location.assign(data.approvalUrl);
+      } else {
+        throw new Error("Missing PayPal approval URL");
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      setError(message);
+    }
+    setCreatingPayPal(false);
+  }
+
   return (
     <div className="space-y-6">
       {!clientSecret && (
@@ -372,10 +418,18 @@ export function CheckoutForm({
 
             <button
               type="submit"
-              disabled={!form.formState.isValid || creating}
+              disabled={!form.formState.isValid || creating || creatingPayPal}
               className="px-4 py-2 rounded bg-black text-white disabled:opacity-50"
             >
               {creating ? "Preparing…" : "Continue to payment"}
+            </button>
+            <button
+              type="button"
+              onClick={form.handleSubmit(createPayPalOrder)}
+              disabled={!form.formState.isValid || creating || creatingPayPal}
+              className="px-4 py-2 rounded border border-white/10 text-zinc-200 disabled:opacity-50"
+            >
+              {creatingPayPal ? "Redirecting…" : "Pay with PayPal"}
             </button>
           </form>
         </Form>

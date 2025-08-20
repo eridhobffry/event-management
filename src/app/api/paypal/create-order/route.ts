@@ -112,7 +112,9 @@ export async function POST(req: Request) {
 
       // Create PayPal order
       const accessToken = await getPayPalAccessToken();
-      const res = await fetch(`${getPayPalApiBase()}/v2/checkout/orders`, {
+      const apiBase = getPayPalApiBase();
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const res = await fetch(`${apiBase}/v2/checkout/orders`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -133,8 +135,8 @@ export async function POST(req: Request) {
             brand_name: "Event Management",
             shipping_preference: "NO_SHIPPING",
             user_action: "PAY_NOW",
-            return_url: "http://localhost:3000/api/paypal/return", // unused with server capture
-            cancel_url: "http://localhost:3000/api/paypal/cancel",
+            return_url: `${baseUrl}/paypal/return`,
+            cancel_url: `${baseUrl}/paypal/cancel`,
           },
         }),
       });
@@ -143,7 +145,12 @@ export async function POST(req: Request) {
         const text = await res.text().catch(() => "");
         throw new Error(`PayPal create order error: ${res.status} ${text}`);
       }
-      const data = (await res.json()) as { id: string };
+      type PayPalCreateOrderResponse = {
+        id: string;
+        links?: Array<{ rel?: string; href?: string }>;
+      };
+      const data: PayPalCreateOrderResponse = await res.json();
+      const approvalUrl = data.links?.find((l) => l.rel === "approve")?.href;
 
       // Store PayPal order id in paymentIntentId field
       await tx
@@ -151,7 +158,7 @@ export async function POST(req: Request) {
         .set({ paymentIntentId: data.id, updatedAt: sql`now()` })
         .where(eq(orders.id, orderId));
 
-      return { orderId, paypalOrderId: data.id };
+      return { orderId, paypalOrderId: data.id, approvalUrl };
     });
 
     return NextResponse.json(result);

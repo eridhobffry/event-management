@@ -19,7 +19,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "PORT=3050 npm run dev",
+    command: "PORT=3050 NEXT_PUBLIC_APP_URL=http://localhost:3050 npm run dev",
     url: "http://localhost:3050",
     reuseExistingServer: false,
     stdout: "pipe",
