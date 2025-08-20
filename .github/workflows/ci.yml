@@ -9,6 +9,20 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     env:
       PLAYWRIGHT_BASE_URL: http://localhost:3050
       CI: true
@@ -45,6 +59,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set default NEON_DATABASE_URL if missing (use local Postgres service)
+        run: |
+          if [ -z "${NEON_DATABASE_URL}" ]; then
+            echo "NEON_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres" >> $GITHUB_ENV
+          fi
+
       - name: Lint (non-blocking)
         run: npm run lint --silent || true
 
@@ -55,7 +75,6 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Prepare database (migrate + seed)
-        if: ${{ env.NEON_DATABASE_URL != '' }}
         run: |
           npm run db:push --silent
           npm run db:seed --silent
