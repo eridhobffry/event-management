@@ -58,6 +58,28 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## CI Environment (GitHub Actions)
+
+Our CI runs unit tests (Vitest) and E2E tests (Playwright). The workflow will:
+
+- **Start a local Postgres service**. If `NEON_DATABASE_URL` is not set as a repository secret, CI falls back to `postgresql://postgres:postgres@localhost:5432/postgres`.
+- **Always run migrations and seed** before E2E:
+  - `npm run db:push`
+  - `npm run db:seed`
+- **Start the app** for Playwright on `http://localhost:3050` via Playwright `webServer`.
+- **Retry E2E on CI**: Playwright `retries` is `2` when `CI` is true.
+
+### Required CI secrets (recommended)
+
+- `NEON_DATABASE_URL` (optional if you prefer the local Postgres service)
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_SECRET`
+- `PAYPAL_ENV` (e.g. `sandbox`)
+- `PAYPAL_SANDBOX_BUYER_EMAIL` (Personal Sandbox account email for E2E)
+- `PAYPAL_SANDBOX_BUYER_PASSWORD` (password for the buyer account)
+
+See `docs/CI_SETUP.md` for a step‑by‑step guide to configure these and PayPal Sandbox accounts.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

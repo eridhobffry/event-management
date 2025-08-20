@@ -74,7 +74,16 @@ Next:
 - PayPal parity: capture flow to mark orders paid, issue tickets, and send the same QR email.
 - Tests: webhook idempotency (email only when tickets created), check-in token toggle.
 
-## 🔬 QA Checklist
+## CI / Infra Update (Aug 20, 2025)
+
+- CI stabilized and green:
+  - Local Postgres service fallback when `NEON_DATABASE_URL` is absent.
+  - Migrations + seed always run before Playwright E2E.
+  - Playwright retries enabled on CI only (`retries=2`).
+- Unit tests hardened for path resolution in CI.
+- Branch status: merge-ready. Next task to proceed on a new branch.
+
+## QA Checklist
 
 - Mobile first: thumb‑reachable CTAs, single column, sticky primary action.
 - Guest checkout works without account; errors are inline and specific.
