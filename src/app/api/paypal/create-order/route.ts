@@ -35,58 +35,81 @@ export async function POST(req: Request) {
     const { eventId, email, items } = parsed.data;
     const ids = items.map((i) => i.ticketTypeId);
 
-    // Validate ticket types
-    const rows = await db
-      .select({
-        id: ticketTypes.id,
-        eventId: ticketTypes.eventId,
-        isActive: ticketTypes.isActive,
-        priceCents: ticketTypes.priceCents,
-        currency: ticketTypes.currency,
-        quantityTotal: ticketTypes.quantityTotal,
-        quantitySold: ticketTypes.quantitySold,
-        name: ticketTypes.name,
-      })
-      .from(ticketTypes)
-      .where(and(inArray(ticketTypes.id, ids), eq(ticketTypes.eventId, eventId)));
-
-    if (rows.length !== ids.length) {
+    // Validate base URL in production to avoid broken redirects
+    if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL) {
       return NextResponse.json(
-        { error: "One or more ticket types are invalid for this event" },
-        { status: 400 }
+        { error: "Server misconfigured: NEXT_PUBLIC_APP_URL is required in production." },
+        { status: 500 }
       );
     }
 
-    const currency = rows[0].currency;
-    let amountTotalCents = 0;
-    for (const item of items) {
-      const tt = rows.find((r) => r.id === item.ticketTypeId)!;
-      if (!tt.isActive) {
-        return NextResponse.json(
-          { error: `Ticket type ${tt.name} is not active` },
-          { status: 400 }
-        );
-      }
-      if (tt.currency !== currency) {
-        return NextResponse.json(
-          { error: "All items must share the same currency" },
-          { status: 400 }
-        );
-      }
-      const available = tt.quantityTotal - tt.quantitySold;
-      if (item.quantity > available) {
-        return NextResponse.json(
-          { error: `Not enough availability for ${tt.name}`, available },
-          { status: 400 }
-        );
-      }
-      amountTotalCents += tt.priceCents * item.quantity;
-    }
-
-    const totalDecimal = (amountTotalCents / 100).toFixed(2);
-    const paypalCurrency = currency.toUpperCase();
-
     const result = await db.transaction(async (tx) => {
+      // Lock ticket types and validate within the transaction
+      const lockedRows = await tx
+        .select({
+          id: ticketTypes.id,
+          eventId: ticketTypes.eventId,
+          isActive: ticketTypes.isActive,
+          priceCents: ticketTypes.priceCents,
+          currency: ticketTypes.currency,
+          quantityTotal: ticketTypes.quantityTotal,
+          quantitySold: ticketTypes.quantitySold,
+          name: ticketTypes.name,
+        })
+        .from(ticketTypes)
+        .where(and(inArray(ticketTypes.id, ids), eq(ticketTypes.eventId, eventId)))
+        .for("update");
+
+      if (!lockedRows || lockedRows.length !== ids.length) {
+        return NextResponse.json(
+          { error: "One or more ticket types are invalid for this event" },
+          { status: 400 }
+        );
+      }
+
+      const currency = lockedRows[0].currency;
+      let amountTotalCents = 0;
+      for (const item of items) {
+        const tt = lockedRows.find((r) => r.id === item.ticketTypeId);
+        if (!tt) {
+          return NextResponse.json(
+            { error: `Invalid ticket type in request: ${item.ticketTypeId}` },
+            { status: 400 }
+          );
+        }
+        if (!tt.isActive) {
+          return NextResponse.json(
+            { error: `Ticket type ${tt.name} is not active` },
+            { status: 400 }
+          );
+        }
+        if (tt.currency !== currency) {
+          return NextResponse.json(
+            { error: "All items must share the same currency" },
+            { status: 400 }
+          );
+        }
+        const available = tt.quantityTotal - tt.quantitySold;
+        if (item.quantity > available) {
+          return NextResponse.json(
+            { error: `Not enough availability for ${tt.name}`, available },
+            { status: 400 }
+          );
+        }
+        amountTotalCents += tt.priceCents * item.quantity;
+      }
+
+      // Reserve by incrementing quantitySold while rows are locked
+      for (const item of items) {
+        await tx
+          .update(ticketTypes)
+          .set({ quantitySold: sql`${ticketTypes.quantitySold} + ${item.quantity}` })
+          .where(and(eq(ticketTypes.id, item.ticketTypeId), eq(ticketTypes.eventId, eventId)));
+      }
+
+      const totalDecimal = (amountTotalCents / 100).toFixed(2);
+      const paypalCurrency = currency.toUpperCase();
+
       // Create order (pending)
       const [order] = await tx
         .insert(orders)
@@ -102,18 +125,23 @@ export async function POST(req: Request) {
       const orderId = order.id;
 
       // Create order items
-      const values = items.map((i) => ({
-        orderId,
-        ticketTypeId: i.ticketTypeId,
-        quantity: i.quantity,
-        unitPriceCents: rows.find((r) => r.id === i.ticketTypeId)!.priceCents,
-      }));
+      const values = items.map((i) => {
+        const found = (lockedRows as any).find((r: any) => r.id === i.ticketTypeId);
+        if (!found) throw new Error(`Price lookup failed for ticketTypeId=${i.ticketTypeId}`);
+        return {
+          orderId,
+          ticketTypeId: i.ticketTypeId,
+          quantity: i.quantity,
+          unitPriceCents: found.priceCents,
+        };
+      });
       await tx.insert(orderItems).values(values);
 
       // Create PayPal order
       const accessToken = await getPayPalAccessToken();
       const apiBase = getPayPalApiBase();
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      const baseUrl = appUrl ?? "http://localhost:3000";
       const res = await fetch(`${apiBase}/v2/checkout/orders`, {
         method: "POST",
         headers: {
@@ -163,7 +191,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json(result);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Log detailed error server-side, but return a generic message to the client
+    if (err instanceof Error) {
+      console.error("PayPal create-order error:", err.stack || err.message);
+    } else {
+      console.error("PayPal create-order error (non-Error):", err);
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
