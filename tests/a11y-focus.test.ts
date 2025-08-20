@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { expect, test } from "vitest";
 
-const ROOT = process.env.GITHUB_WORKSPACE || process.cwd();
+const WS = process.env.GITHUB_WORKSPACE;
+const ROOT = WS && existsSync(WS) ? WS : process.cwd();
 
 test("button has visible focus styles and CTA has aria-label", async () => {
   const button = await readFile(join(ROOT, "src/components/ui/button.tsx"), "utf8");

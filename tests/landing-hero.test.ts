@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { expect, test } from "vitest";
 
-const ROOT = process.env.GITHUB_WORKSPACE || process.cwd();
+const WS = process.env.GITHUB_WORKSPACE;
+const ROOT = WS && existsSync(WS) ? WS : process.cwd();
 
 test("landing hero: single CTA to discovery, anchor present, social proof text", async () => {
   const content = await readFile(join(ROOT, "src/app/page.tsx"), "utf8");
