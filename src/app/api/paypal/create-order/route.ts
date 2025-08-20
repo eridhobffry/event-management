@@ -126,7 +126,7 @@ export async function POST(req: Request) {
 
       // Create order items
       const values = items.map((i) => {
-        const found = (lockedRows as any).find((r: any) => r.id === i.ticketTypeId);
+        const found = lockedRows.find((r) => r.id === i.ticketTypeId);
         if (!found) throw new Error(`Price lookup failed for ticketTypeId=${i.ticketTypeId}`);
         return {
           orderId,
@@ -189,6 +189,9 @@ export async function POST(req: Request) {
       return { orderId, paypalOrderId: data.id, approvalUrl };
     });
 
+    if (result instanceof Response) {
+      return result;
+    }
     return NextResponse.json(result);
   } catch (err) {
     // Log detailed error server-side, but return a generic message to the client

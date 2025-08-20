@@ -9,18 +9,16 @@ import { sendEmail } from "@/lib/email";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-const stripe = new Stripe(stripeSecretKey ?? "", {});
-
 export async function POST(req: Request) {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!stripeSecretKey || !stripeWebhookSecret) {
     return NextResponse.json(
       { error: "Stripe env vars not set" },
       { status: 500 }
     );
   }
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-07-30.basil" });
 
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
@@ -70,6 +68,7 @@ export async function POST(req: Request) {
               .where(eq(orders.paymentIntentId, paymentIntent.id))
               .limit(1);
 
+        console.log("stripe:webhook:resolved order", { hasOrder: !!orderRow });
         if (!orderRow) break; // Not our order; ignore
 
         const txResult = await db.transaction(async (tx) => {
@@ -141,6 +140,7 @@ export async function POST(req: Request) {
           return { createdCount: tokens.length, tokens };
         });
 
+        console.log("stripe:webhook:tx result", txResult);
         // Send confirmation email with QR codes only when tickets were created now
         if (txResult?.createdCount && txResult.createdCount > 0) {
           try {
@@ -183,6 +183,7 @@ export async function POST(req: Request) {
               </div>
             `;
 
+            console.log("stripe:webhook:attempting to send email", { to: orderRow.email, count: txResult.createdCount });
             if (orderRow.email) {
               await sendEmail({ to: orderRow.email, subject, html });
               console.log("✅ Sent ticket confirmation email with", txResult.createdCount, "QR(s) to", orderRow.email);
@@ -238,6 +239,7 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("stripe:webhook handler error:", err);
     return new NextResponse(`Webhook Handler Error: ${message}`, {
       status: 500,
     });
