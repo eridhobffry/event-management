@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import type { Page, Frame } from "@playwright/test";
 
 // This E2E validates the full PayPal sandbox purchase flow end-to-end.
 // It requires:
@@ -22,7 +23,7 @@ const EVENT_ID = process.env.E2E_EVENT_ID;
 const PREFERRED_EVENT_NAME = process.env.E2E_EVENT_NAME || "React Conference 2025";
 
 // Resolve an event id either from env or by discovering it via the UI
-async function resolveEventId(page: import("@playwright/test").Page): Promise<string> {
+async function resolveEventId(page: Page): Promise<string> {
   if (EVENT_ID) return EVENT_ID;
 
   // Discover from /events page by finding the preferred event card and extracting the /register href
@@ -56,10 +57,10 @@ async function resolveEventId(page: import("@playwright/test").Page): Promise<st
 }
 
 // Heuristic helper to interact with PayPal sandbox pages (selectors can change).
-async function approveInPayPal(page: import("@playwright/test").Page) {
+async function approveInPayPal(ctx: Page | Frame) {
   // Sometimes cookie consent appears.
   try {
-    const accept = page.locator('button:has-text("Accept")');
+    const accept = ctx.locator('button:has-text("Accept")');
     if (await accept.isVisible({ timeout: 2000 }).catch(() => false)) {
       await accept.click();
     }
@@ -77,7 +78,7 @@ async function approveInPayPal(page: import("@playwright/test").Page) {
     'input#email',
   ];
   for (const sel of emailSelectors) {
-    const el = page.locator(sel);
+    const el = ctx.locator(sel);
     if (await el.first().isVisible({ timeout: 3000 }).catch(() => false)) {
       await el.first().fill(email);
       break;
@@ -90,7 +91,7 @@ async function approveInPayPal(page: import("@playwright/test").Page) {
     'button:has-text("Continue")',
   ];
   for (const sel of nextButtons) {
-    const btn = page.locator(sel);
+    const btn = ctx.locator(sel);
     if (await btn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
       await btn.first().click();
       break;
@@ -105,7 +106,7 @@ async function approveInPayPal(page: import("@playwright/test").Page) {
     'input#password',
   ];
   for (const sel of passSelectors) {
-    const el = page.locator(sel);
+    const el = ctx.locator(sel);
     if (await el.first().isVisible({ timeout: 3000 }).catch(() => false)) {
       await el.first().fill(password);
       break;
@@ -119,7 +120,7 @@ async function approveInPayPal(page: import("@playwright/test").Page) {
     'button:has-text("Login")',
   ];
   for (const sel of loginButtons) {
-    const btn = page.locator(sel);
+    const btn = ctx.locator(sel);
     if (await btn.first().isVisible({ timeout: 2000 }).catch(() => false)) {
       await btn.first().click();
       break;
@@ -134,7 +135,7 @@ async function approveInPayPal(page: import("@playwright/test").Page) {
     'button:has-text("Complete Purchase")',
   ];
   for (const sel of approveButtons) {
-    const btn = page.locator(sel);
+    const btn = ctx.locator(sel);
     if (await btn.first().isVisible({ timeout: 5000 }).catch(() => false)) {
       await btn.first().click();
       break;
@@ -169,17 +170,40 @@ test.describe("PayPal Sandbox Purchase", () => {
     await expect(qty).toBeVisible();
     await qty.fill("1");
 
-    // Click Pay with PayPal and follow redirect to PayPal
-    await Promise.all([
-      page.waitForNavigation({ url: /paypal\.com|paypalobjects\.com|sandbox\.paypal\.com/, timeout: 60_000 }),
-      page.getByRole("button", { name: /Pay with PayPal/i }).click(),
-    ]);
+    // Click Pay with PayPal and handle multi-entry (popup, iframe, in-page redirect)
+    const popupPromise = page.waitForEvent("popup", { timeout: 15_000 }).catch(() => null);
+    const clickPromise = page.getByRole("button", { name: /Pay with PayPal/i }).click();
 
-    // Approve in PayPal sandbox
-    await page.waitForLoadState("domcontentloaded");
-    await approveInPayPal(page);
+    const iframeLocator = page.locator('iframe[src*="paypal.com"], iframe[src*="paypalobjects.com"], iframe[name*="paypal"]');
+    const frameReadyPromise = iframeLocator.first().elementHandle({ timeout: 15_000 }).catch(() => null);
+    const navPromise = page.waitForURL(/paypal\.com|paypalobjects\.com|sandbox\.paypal\.com/, { timeout: 20_000 }).catch(() => null);
 
-    // Wait to be redirected back to our app's return URL, then to success
+    await clickPromise;
+
+    const [popup, frameHandle, inPageNav] = await Promise.all([popupPromise, frameReadyPromise, navPromise]);
+
+    if (popup) {
+      await popup.waitForLoadState("domcontentloaded");
+      await approveInPayPal(popup);
+    } else if (frameHandle) {
+      // Resolve the actual Frame from the handle
+      const frame = (await frameHandle.contentFrame()) as Frame | null;
+      if (!frame) throw new Error("PayPal iframe detected but frame was null");
+      await approveInPayPal(frame);
+    } else if (inPageNav) {
+      await page.waitForLoadState("domcontentloaded");
+      await approveInPayPal(page);
+    } else {
+      // As a last resort, try to find any paypal frame by URL
+      const pf = page.frames().find(f => /paypal\.com|paypalobjects\.com/.test(f.url()));
+      if (pf) {
+        await approveInPayPal(pf);
+      } else {
+        throw new Error("Unable to detect PayPal context (popup, iframe, or redirect)");
+      }
+    }
+
+    // After approval, original page should navigate back to our app
     await page.waitForURL(/\/paypal\/return/, { timeout: 60_000 });
     await page.waitForURL(/\/events\/[^/]+\/purchase\/success/, { timeout: 60_000 });
 
