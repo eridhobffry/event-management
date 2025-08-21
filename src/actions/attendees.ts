@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 // import { redirect } from "next/navigation"; // Removed redirect as we now return success status
 
 import { db } from "@/lib/db";
-import { attendees } from "@/db/schema";
-import { sendEmail } from "@/lib/email";
+import { attendees, events } from "@/db/schema";
+import { sendRSVPConfirmation } from "@/lib/rsvp-notifications";
 import { stackServerApp } from "@/stack";
 import { eq, and, desc, isNull, isNotNull, count, sql } from "drizzle-orm";
 import {
@@ -158,31 +158,32 @@ export async function registerAttendee(values: AttendeeRegisterInput) {
     return { message: "Database error while registering." };
   }
 
-  // Send confirmation email (non-blocking)
+  // Send RSVP confirmation email (non-blocking)
   try {
-    await sendEmail({
-      to: email,
-      subject: "Event Registration Confirmation",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Registration Confirmed!</h2>
-          <p>Hi ${firstName},</p>
-          <p>Thank you for registering for our event! We're excited to have you join us.</p>
-          <p>We look forward to seeing you there.</p>
-          <br>
-          <p>Best regards,<br>Event Management Team</p>
-        </div>
-      `,
-    });
-    console.log("✅ Confirmation email sent successfully to:", email);
-  } catch (emailError: unknown) {
-    const errorMessage =
-      emailError instanceof Error ? emailError.message : String(emailError);
-    if (errorMessage.includes("You can only send testing emails")) {
-      console.error("❌ Failed to send confirmation email:", emailError);
-    } else {
-      console.error("❌ Failed to send confirmation email:", emailError);
+    // Get event details for the email
+    const eventDetails = await db
+      .select({
+        name: events.name,
+        date: events.date,
+      })
+      .from(events)
+      .where(eq(events.id, eventId))
+      .limit(1);
+
+    if (eventDetails[0] && createdAttendeeId) {
+      await sendRSVPConfirmation({
+        id: createdAttendeeId,
+        name,
+        email,
+        eventId,
+        eventName: eventDetails[0].name,
+        eventDate: new Date(eventDetails[0].date!),
+        expiryDate: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48 hours from now
+      });
+      console.log("✅ RSVP confirmation email sent successfully to:", email);
     }
+  } catch (emailError: unknown) {
+    console.error("❌ Failed to send RSVP confirmation email:", emailError);
     // Continue with registration even if email fails
   }
 
