@@ -50,6 +50,20 @@
       "when": 1755534806259,
       "tag": "0006_charming_vector",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1755764758238,
+      "tag": "0007_graceful_captain_britain",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1755765212563,
+      "tag": "0008_white_sersi",
+      "breakpoints": true
     }
   ]
 }
