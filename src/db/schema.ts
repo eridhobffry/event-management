@@ -1,6 +1,8 @@
 export * from "./schema/activity_logs";
 export * from "./schema/attendees";
 export * from "./schema/events";
+export * from "./schema/guest-list-requests";
+export * from "./schema/proactive-guest-list";
 export * from "./schema/permissions";
 export * from "./schema/role_permissions";
 export * from "./schema/roles";
@@ -10,3 +12,4 @@ export * from "./schema/ticket_types";
 export * from "./schema/orders";
 export * from "./schema/order_items";
 export * from "./schema/tickets";
+export * from "./schema/relations";
