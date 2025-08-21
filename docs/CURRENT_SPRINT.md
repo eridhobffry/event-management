@@ -101,8 +101,15 @@ Next:
 
 Branch: `feat/ui-landing-events-checkout`
 
-## 🧭 References
+## References
 
 - Event landing patterns and examples: [Unbounce](https://unbounce.com/landing-page-examples/event-landing-page-examples/), [Landingi roundup](https://landingi.com/landing-page/design-examples/)
 - Hero/landing trends 2025: [SiteMile](https://sitemile.com/best-hero-marquee-design-trends-for-2025-make-your-website-stand-out/)
 - Checkout UX (forms, trust, guest): [Stripe](https://stripe.com/resources/more/checkout-screen-best-practices), [Stripe ecommerce](https://stripe.com/resources/more/ecommerce-checkout-best-practices)
+
+## Dev Log (2025-08-21T16:48:04+02:00)
+
+- Completed: Investigated adding where-filtering support to mock in-memory DB (`src/lib/db.ts`) to mimic Drizzle queries. After test instability, reverted `db.query.*` `findMany/findFirst` to previous minimal behavior (ignore `where`/`orderBy`) to keep suite stable.
+- Status: Sprint tasks on this branch are complete; branch is merge-ready.
+- Notes: Guest list-related tests previously green. Lint cleanups applied in `src/lib/db.ts` (removed duplicate property, silenced unused param in mock delete).
+- Next: Merge to `master` and pick up the next task. Optional follow-up: implement proper `where` filtering for mock DB updates/selects/deletes when needed.

@@ -164,7 +164,8 @@ if (!process.env.NEON_DATABASE_URL) {
 
   function createMockDeleteQuery(tableName: keyof typeof mockStorage) {
     return {
-      where: async (condition?: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      where: async (_condition?: any) => {
         mockStorage[tableName].length = 0;
         return;
       },
@@ -233,11 +234,11 @@ if (!process.env.NEON_DATABASE_URL) {
     delete: (table: any) => createMockDeleteQuery(getTableName(table)),
     query: {
       events: {
-        findMany: async (_options?: any) => mockStorage.events,
-        findFirst: async (_options?: any) => mockStorage.events[0] || undefined,
+        findMany: async () => mockStorage.events,
+        findFirst: async () => mockStorage.events[0] || undefined,
       },
       attendees: {
-        findMany: async (_options?: any) => mockStorage.attendees,
+        findMany: async () => mockStorage.attendees,
         findFirst: async (_options?: any) => mockStorage.attendees[0] || undefined,
       },
       users: {

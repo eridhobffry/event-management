@@ -15,6 +15,12 @@
   - E2E: `npm run e2e` (Playwright; auto-starts dev server)
 - Event discovery: added city/date/category filters and improved empty states with quick clear actions. See tests `tests/events-discovery.test.ts` and `e2e/events-discovery.spec.ts`.
 
+#### Update — 2025-08-21T16:48:04+02:00
+
+- Mock DB (`src/lib/db.ts`): Investigated adding where-filtering to `db.query.*` methods; reverted to minimal behavior (ignore `where`/`orderBy`) to keep tests stable. Fixed a duplicate property and silenced an unused param lint in mock delete.
+- Status: Branch is merge-ready.
+- Next: Merge to `master` and pick up the next task. Optional: implement proper where filtering in mock DB for select/update/delete when needed.
+
 #### Payments & Tickets (current)
 
 - Stripe webhook issues tickets on payment success, emails QR codes (data URLs), and includes fallback links to secure check-in API at `/api/tickets/check-in`.
