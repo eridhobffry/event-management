@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
+  timeout: 60000, // 60 seconds timeout for tests that include email sending
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3050",
     trace: "on-first-retry",
