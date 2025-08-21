@@ -81,6 +81,7 @@ jobs:
 
       - name: E2E tests
         run: npx playwright test
+        # Note: PayPal E2E test automatically uses mocked endpoints in CI for reliability
 
       - name: Upload Playwright report
         if: always()
