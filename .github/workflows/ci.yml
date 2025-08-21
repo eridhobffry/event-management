@@ -71,19 +71,16 @@ jobs:
       - name: Unit tests (Vitest)
         run: npm run test
 
-      - name: Install Playwright Browsers (all)
-        run: npx playwright install --with-deps
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Prepare database (migrate + seed)
         run: |
           npm run db:push --silent
           npm run db:seed --silent
 
-      - name: E2E tests (Chromium)
-        run: npx playwright test --project=chromium
-
-      - name: E2E tests (iPhone 12)
-        run: npx playwright test --project=iphone-12
+      - name: E2E tests
+        run: npx playwright test
 
       - name: Upload Playwright report
         if: always()
