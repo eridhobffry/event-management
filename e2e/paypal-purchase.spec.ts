@@ -128,9 +128,7 @@ async function resolveEventId(page: Page): Promise<string> {
     .waitFor({ timeout: 15000 });
 
   const card = page.locator("div", { hasText: PREFERRED_EVENT_NAME }).first();
-  const registerLink = card
-    .getByRole("link", { name: /Register Now/i })
-    .first();
+  const registerLink = card.getByRole("link", { name: /RSVP Free/i }).first();
 
   // Try to parse the id from the href directly
   const href = (await registerLink.getAttribute("href")) || "";
