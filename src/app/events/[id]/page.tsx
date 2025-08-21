@@ -149,16 +149,22 @@ export default async function EventDetailPage({ params }: Props) {
                 </Badge>
               </div>
             </div>
-            <div className="shrink-0 flex items-center gap-3">
+            <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {/* Primary CTA: Free RSVP */}
               <Link href={`/events/${event.id}/register`}>
-                <Button className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500">
-                  Get Tickets
+                <Button className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500">
+                  RSVP Free
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
+
+              {/* Secondary CTA: Purchase tickets if available */}
               {hasActiveTicketTypes && (
                 <Link href={`/events/${event.id}/purchase`}>
-                  <Button variant="outline" className="border-indigo-500/30 text-indigo-300">
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/10"
+                  >
                     Buy Tickets
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>

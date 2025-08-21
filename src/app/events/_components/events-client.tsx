@@ -352,11 +352,19 @@ export default function EventsClient({ events }: { events: Event[] }) {
                 </div>
               </CardContent>
 
-              <CardFooter className="pt-4">
+              <CardFooter className="pt-4 space-y-2">
                 <Link href={`/events/${event.id}/register`} className="w-full">
-                  <Button className="w-full group/btn bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-0 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200">
-                    Register Now
+                  <Button className="w-full group/btn bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white border-0 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200">
+                    RSVP Free
                     <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                  </Button>
+                </Link>
+                <Link href={`/events/${event.id}`} className="w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full text-xs text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-zinc-300"
+                  >
+                    View Details & Buy Tickets
                   </Button>
                 </Link>
               </CardFooter>

@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle, Share2, QrCode } from "lucide-react";
+import {
+  CheckCircle,
+  Share2,
+  QrCode,
+  ShoppingCart,
+  ArrowRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
 
 export default function RegistrationThankYou() {
+  const searchParams = useSearchParams();
+  const showPurchase = searchParams.get("showPurchase") === "true";
+
   const [state, setState] = useState<{
     attendeeId: string | null;
     eventId: string | null;
@@ -106,6 +116,28 @@ export default function RegistrationThankYou() {
           </div>
         )}
       </div>
+
+      {/* Purchase CTA - shown when coming from registration */}
+      {showPurchase && state?.eventId && (
+        <div className="bg-gradient-to-r from-indigo-600/20 to-violet-600/20 border border-indigo-500/30 rounded-xl p-6 mb-6 max-w-md">
+          <div className="text-center">
+            <ShoppingCart className="w-8 h-8 text-indigo-400 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Want to secure your spot?
+            </h3>
+            <p className="text-sm text-zinc-300 mb-4">
+              RSVP is free, but purchasing a ticket guarantees your attendance
+              and supports the event.
+            </p>
+            <Link href={`/events/${state.eventId}/purchase`} className="w-full">
+              <Button className="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500">
+                Purchase Tickets
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <Button onClick={handleShare} variant="secondary">

@@ -78,7 +78,8 @@ export default function RegisterForm({ eventId }: Props) {
           }
         } catch {}
         setTimeout(() => {
-          router.push(`/events/${eventId}/register/thanks`);
+          // After successful registration, offer ticket purchase option
+          router.push(`/events/${eventId}/register/thanks?showPurchase=true`);
         }, 1500);
       }
     });
