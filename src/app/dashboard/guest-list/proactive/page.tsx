@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Crown,
@@ -78,17 +78,7 @@ export default function ProactiveGuestListDashboard() {
     personalMessage: "",
   });
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  useEffect(() => {
-    if (selectedEventId) {
-      fetchProactiveGuests();
-    }
-  }, [selectedEventId]);
-
-  async function fetchEvents() {
+  const fetchEvents = useCallback(async () => {
     try {
       // This would typically come from an events API
       // For now, we'll fetch from the events endpoint
@@ -103,9 +93,9 @@ export default function ProactiveGuestListDashboard() {
     } catch (error) {
       console.error("Failed to fetch events:", error);
     }
-  }
+  }, [selectedEventId]);
 
-  async function fetchProactiveGuests() {
+  const fetchProactiveGuests = useCallback(async () => {
     if (!selectedEventId) return;
 
     setLoading(true);
@@ -122,7 +112,18 @@ export default function ProactiveGuestListDashboard() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedEventId]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  useEffect(() => {
+    if (selectedEventId) {
+      fetchProactiveGuests();
+    }
+  }, [selectedEventId, fetchProactiveGuests]);
+
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -235,7 +236,7 @@ export default function ProactiveGuestListDashboard() {
     (guest) => guest.status === "archived"
   );
 
-  const selectedEvent = events.find((e) => e.id === selectedEventId);
+  
 
   return (
     <div className="container mx-auto py-8 px-4">

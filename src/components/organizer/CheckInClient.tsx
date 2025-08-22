@@ -7,6 +7,34 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
+type UnifiedApiResponse =
+  | {
+      ok: true;
+      entityType: "ticket";
+      ticketId: string;
+      checkedInAt: string | null;
+    }
+  | {
+      ok: true;
+      entityType: "guest";
+      guestId: string;
+      usedAt: string | null;
+    }
+  | { ok: false; error?: string; token?: string };
+
+type LegacyApiResponse =
+  | {
+      ok: true;
+      ticketId: string;
+      checkedIn: boolean;
+      checkedInAt: string | null;
+    }
+  | { ok: false; error?: string };
+
+const USE_UNIFIED =
+  process.env.NEXT_PUBLIC_UNIFIED_CHECK_IN === "1" ||
+  process.env.NEXT_PUBLIC_UNIFIED_CHECK_IN === "true";
+
 function extractToken(raw: string): string | null {
   const s = raw.trim();
   if (!s) return null;
@@ -75,20 +103,56 @@ export default function CheckInClient() {
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/tickets/check-in?token=${encodeURIComponent(t)}`,
-        {
+      let res: Response;
+      if (USE_UNIFIED) {
+        res = await fetch(`/api/check-in`, {
           method: "POST",
-        }
-      );
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data) {
-        setResult({
-          ok: false,
-          error: data?.error || `Request failed (${res.status})`,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: t }),
         });
+        const data = (await res
+          .json()
+          .catch(() => null)) as UnifiedApiResponse | null;
+        if (!res.ok || !data || data.ok !== true) {
+          setResult({
+            ok: false,
+            error: (data as { error?: string } | null)?.error || `Request failed (${res.status})`,
+          });
+        } else if (data.entityType === "ticket") {
+          setResult({
+            ok: true,
+            ticketId: data.ticketId,
+            checkedIn: Boolean(data.checkedInAt),
+            checkedInAt: data.checkedInAt ?? null,
+          });
+        } else if (data.entityType === "guest") {
+          setResult({
+            ok: true,
+            ticketId: data.guestId, // display id in UI
+            checkedIn: Boolean(data.usedAt),
+            checkedInAt: data.usedAt ?? null,
+          });
+        } else {
+          setResult({ ok: false, error: "Unexpected response" });
+        }
       } else {
-        setResult(data);
+        res = await fetch(
+          `/api/tickets/check-in?token=${encodeURIComponent(t)}`,
+          {
+            method: "POST",
+          }
+        );
+        const data = (await res
+          .json()
+          .catch(() => null)) as LegacyApiResponse | null;
+        if (!res.ok || !data) {
+          setResult({
+            ok: false,
+            error: (data as { error?: string } | null)?.error || `Request failed (${res.status})`,
+          });
+        } else {
+          setResult(data);
+        }
       }
     } catch (err) {
       setResult({

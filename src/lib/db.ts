@@ -64,6 +64,8 @@ if (!process.env.NEON_DATABASE_URL) {
     users: [] as unknown[],
     guestListRequests: [] as unknown[],
     proactiveGuestList: [] as unknown[],
+    tickets: [] as unknown[],
+    checkInAudit: [] as unknown[],
   };
 
   function createMockInsertQuery(tableName: keyof typeof mockStorage) {
@@ -97,8 +99,9 @@ if (!process.env.NEON_DATABASE_URL) {
             resolve(insertedRecords);
             return insertedRecords;
           },
-          returning: (fields?: any) => ({
+          returning: (_fields?: any) => ({
             then: async (resolve: (data: any) => void) => {
+              void _fields;
               const records = Array.isArray(values) ? values : [values];
               const insertedRecords = records.map((item: any) => {
                 const id = item.id || randomUUID();
@@ -136,10 +139,13 @@ if (!process.env.NEON_DATABASE_URL) {
     const data = tableName ? mockStorage[tableName] : mockStorage.events;
     return {
       from: (table: any) => createMockFromQuery(getTableName(table)),
-      where: (_condition: any) => ({
-        limit: (n: number) => Promise.resolve(data.slice(0, n)),
-        then: (resolve: (data: any) => void) => resolve(data),
-      }),
+      where: (_condition: any) => {
+        void _condition;
+        return {
+          limit: (n: number) => Promise.resolve(data.slice(0, n)),
+          then: (resolve: (data: any) => void) => resolve(data),
+        };
+      },
       limit: (n: number) => Promise.resolve(data.slice(0, n)),
       then: (resolve: (data: any) => void) => resolve(data),
     };
@@ -148,27 +154,46 @@ if (!process.env.NEON_DATABASE_URL) {
   function createMockFromQuery(tableName: keyof typeof mockStorage) {
     const data = mockStorage[tableName];
     return {
-      where: (_condition: any) => ({
-        limit: (n: number) => Promise.resolve(data.slice(0, n)),
-        orderBy: (..._args: any[]) => Promise.resolve(data),
-        then: (resolve: (data: any) => void) => resolve(data),
-      }),
-      innerJoin: (_table: any, _condition: any) => ({
-        where: (_condition2: any) => ({
-          orderBy: (..._args: any[]) => Promise.resolve([]),
+      where: (_condition: any) => {
+        void _condition;
+        return {
+          limit: (n: number) => Promise.resolve(data.slice(0, n)),
+          orderBy: (..._args: any[]) => {
+            void _args;
+            return Promise.resolve(data);
+          },
+          then: (resolve: (data: any) => void) => resolve(data),
+        };
+      },
+      innerJoin: (_table: any, _condition: any) => {
+        void _table;
+        void _condition;
+        return {
+          where: (_condition2: any) => {
+            void _condition2;
+            return {
+              orderBy: (..._args: any[]) => {
+                void _args;
+                return Promise.resolve([]);
+              },
+              then: (resolve: (data: any) => void) => resolve([]),
+            };
+          },
+          orderBy: (..._args: any[]) => {
+            void _args;
+            return Promise.resolve([]);
+          },
           then: (resolve: (data: any) => void) => resolve([]),
-        }),
-        orderBy: (..._args: any[]) => Promise.resolve([]),
-        then: (resolve: (data: any) => void) => resolve([]),
-      }),
+        };
+      },
       then: (resolve: (data: any) => void) => resolve(data),
     };
   }
 
   function createMockDeleteQuery(tableName: keyof typeof mockStorage) {
     return {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       where: async (_condition?: any) => {
+        void _condition;
         mockStorage[tableName].length = 0;
         return;
       },
@@ -190,16 +215,23 @@ if (!process.env.NEON_DATABASE_URL) {
       return "guestListRequests";
     if (tableStr.includes("proactiveGuestList") || table === proactiveGuestList)
       return "proactiveGuestList";
+    if (tableStr.includes("tickets")) return "tickets";
+    if (tableStr.includes("checkInAudit")) return "checkInAudit";
     return "events"; // fallback
   }
 
   migrationClient = {} as unknown as ReturnType<typeof postgres>;
   db = {
-    select: (_fields?: any) => createMockSelectQuery(),
+    select: (_fields?: any) => {
+      void _fields;
+      return createMockSelectQuery();
+    },
     insert: (table: any) => createMockInsertQuery(getTableName(table)),
     update: (table: any) => ({
       set: (data: any) => ({
-        where: (_condition: any) => ({
+        where: (_condition: any) => {
+          void _condition;
+          return {
           returning: () => {
             const tbl = getTableName(table);
             const updatedRecords = mockStorage[tbl].map((r: any) => {
@@ -214,6 +246,14 @@ if (!process.env.NEON_DATABASE_URL) {
               }
               if (tbl === "proactiveGuestList" && data?.status === "archived") {
                 updated.archivedAt = updated.archivedAt || new Date();
+              }
+              if (tbl === "tickets") {
+                if (data?.status === "checked_in" && !updated.checkedInAt) {
+                  updated.checkedInAt = new Date();
+                }
+                if (data?.status === "issued" && updated.checkedInAt) {
+                  updated.checkedInAt = null;
+                }
               }
               updated.updatedAt = new Date();
               return updated;
@@ -236,13 +276,22 @@ if (!process.env.NEON_DATABASE_URL) {
               if (tbl === "proactiveGuestList" && data?.status === "archived") {
                 updated.archivedAt = updated.archivedAt || new Date();
               }
+              if (tbl === "tickets") {
+                if (data?.status === "checked_in" && !updated.checkedInAt) {
+                  updated.checkedInAt = new Date();
+                }
+                if (data?.status === "issued" && updated.checkedInAt) {
+                  updated.checkedInAt = null;
+                }
+              }
               updated.updatedAt = new Date();
               return updated;
             });
             mockStorage[tbl] = updatedRecords;
             resolve(updatedRecords);
           },
-        }),
+        };
+        },
       }),
     }),
     delete: (table: any) => createMockDeleteQuery(getTableName(table)),
@@ -252,23 +301,52 @@ if (!process.env.NEON_DATABASE_URL) {
         findFirst: async () => mockStorage.events[0] || undefined,
       },
       attendees: {
-        findMany: async () => mockStorage.attendees,
-        findFirst: async (_options?: any) =>
-          mockStorage.attendees[0] || undefined,
+        findMany: async (_options?: any) => {
+          void _options;
+          return mockStorage.attendees;
+        },
+        findFirst: async (_options?: any) => {
+          void _options;
+          return mockStorage.attendees[0] || undefined;
+        },
       },
       users: {
-        findMany: async (_options?: any) => mockStorage.users,
-        findFirst: async (_options?: any) => mockStorage.users[0] || undefined,
+        findMany: async (_options?: any) => {
+          void _options;
+          return mockStorage.users;
+        },
+        findFirst: async (_options?: any) => {
+          void _options;
+          return mockStorage.users[0] || undefined;
+        },
       },
       guestListRequests: {
-        findMany: async (_options?: any) => mockStorage.guestListRequests,
-        findFirst: async (_options?: any) =>
-          mockStorage.guestListRequests[0] || undefined,
+        findMany: async (_options?: any) => {
+          void _options;
+          return mockStorage.guestListRequests;
+        },
+        findFirst: async (_options?: any) => {
+          void _options;
+          return mockStorage.guestListRequests[0] || undefined;
+        },
       },
       proactiveGuestList: {
-        findMany: async (_options?: any) => mockStorage.proactiveGuestList,
-        findFirst: async (_options?: any) =>
-          mockStorage.proactiveGuestList[0] || undefined,
+        findMany: async (_options?: any) => {
+          void _options;
+          return mockStorage.proactiveGuestList;
+        },
+        findFirst: async (_options?: any) => {
+          void _options;
+          return mockStorage.proactiveGuestList[0] || undefined;
+        },
+      },
+      tickets: {
+        findMany: async () => mockStorage.tickets,
+        findFirst: async () => mockStorage.tickets[0] || undefined,
+      },
+      checkInAudit: {
+        findMany: async () => mockStorage.checkInAudit,
+        findFirst: async () => mockStorage.checkInAudit[0] || undefined,
       },
     },
   } as unknown as PostgresJsDatabase<typeof schema>;

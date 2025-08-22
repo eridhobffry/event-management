@@ -13,3 +13,5 @@ export * from "./schema/orders";
 export * from "./schema/order_items";
 export * from "./schema/tickets";
 export * from "./schema/relations";
+export * from "./schema/check_in_audit";
+export * from "./schema/webhook_events";
