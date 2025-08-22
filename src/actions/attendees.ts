@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 // import { redirect } from "next/navigation"; // Removed redirect as we now return success status
 
 import { db } from "@/lib/db";
-import { attendees, events } from "@/db/schema";
+import { attendees, events, usersBase } from "@/db/schema";
 import { sendRSVPConfirmation } from "@/lib/rsvp-notifications";
 import { stackServerApp } from "@/stack";
 import { eq, and, desc, isNull, isNotNull, count, sql } from "drizzle-orm";
@@ -194,7 +194,7 @@ export async function registerAttendee(values: AttendeeRegisterInput) {
   const normalizedEmail = validated.data.email.trim().toLowerCase();
   const name = `${firstName} ${lastName}`.trim();
 
-  // If logged in, attach userId
+  // If logged in, attach userId (only if user exists in Neon users table when using real DB)
   const user = await stackServerApp.getUser().catch(() => null);
 
   let createdAttendeeId: string | null = null;
@@ -244,11 +244,36 @@ export async function registerAttendee(values: AttendeeRegisterInput) {
       };
     }
 
+    // Determine safe userId to insert
+    let userIdToInsert: string | null = null;
+    if (user?.id) {
+      if (!process.env.NEON_DATABASE_URL) {
+        // In mock DB, there is no FK enforcement; keep the id for parity with client logic
+        userIdToInsert = user.id;
+      } else {
+        // In Neon, only set userId if the user exists in neon_auth.users_sync
+        const userExists = await db
+          .select({ id: usersBase.id })
+          .from(usersBase)
+          .where(eq(usersBase.id, user.id))
+          .limit(1);
+        if (userExists?.[0]?.id) {
+          userIdToInsert = user.id;
+        } else {
+          console.warn(
+            "registerAttendee: Logged-in user not present in neon_auth.users_sync; inserting attendee with null userId",
+            { userId: user.id }
+          );
+          userIdToInsert = null;
+        }
+      }
+    }
+
     const inserted = await db
       .insert(attendees)
       .values({
         eventId,
-        userId: user?.id ?? null,
+        userId: userIdToInsert,
         name,
         email: normalizedEmail,
         phone,
