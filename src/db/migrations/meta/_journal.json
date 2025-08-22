@@ -71,6 +71,13 @@
       "when": 1755862329645,
       "tag": "0009_busy_the_twelve",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1755875277130,
+      "tag": "0010_wise_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

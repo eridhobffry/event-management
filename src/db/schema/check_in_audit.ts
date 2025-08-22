@@ -1,6 +1,6 @@
 import { pgTable, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
 import { events } from "./events";
-import { users } from "./users";
+import { usersBase } from "./users";
 
 // Records every check-in and undo action for tickets and guest list entries
 export const checkInAudit = pgTable(
@@ -10,7 +10,7 @@ export const checkInAudit = pgTable(
     eventId: uuid("event_id").notNull().references(() => events.id),
     entityType: text("entity_type").notNull(), // 'ticket' | 'guest'
     entityId: uuid("entity_id").notNull(),
-    actorUserId: text("actor_user_id").references(() => users.id),
+    actorUserId: text("actor_user_id").references(() => usersBase.id),
     actorRole: text("actor_role"),
     action: text("action").notNull(), // 'check_in' | 'undo'
     reason: text("reason"),
@@ -24,3 +24,4 @@ export const checkInAudit = pgTable(
     idxCreatedAt: index("idx_check_in_audit_created_at").on(table.createdAt),
   })
 );
+

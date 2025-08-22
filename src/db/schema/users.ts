@@ -9,3 +9,9 @@ export const users = neonAuthSchema.table("users_sync_write", {
   id: text("id").primaryKey(),
   email: text("email"),
 });
+
+// Base table mapping for foreign keys (must reference a real table, not a view)
+export const usersBase = neonAuthSchema.table("users_sync", {
+  id: text("id").primaryKey(),
+  email: text("email"),
+});

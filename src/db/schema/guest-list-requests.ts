@@ -1,7 +1,7 @@
 import { pgTable, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
 import { events } from "./events";
 import { attendees } from "./attendees";
-import { users } from "./users";
+import { usersBase } from "./users";
 
 export const guestListRequests = pgTable(
   "guest_list_requests",
@@ -13,12 +13,12 @@ export const guestListRequests = pgTable(
     attendeeId: uuid("attendee_id")
       .notNull()
       .references(() => attendees.id, { onDelete: "cascade" }),
-    requesterId: text("requester_id").references(() => users.id),
+    requesterId: text("requester_id").references(() => usersBase.id),
     requesterEmail: text("requester_email").notNull(),
     requesterName: text("requester_name").notNull(),
     reason: text("reason"), // Optional reason why they want to be on guest list
     status: text("status").notNull().default("pending"), // pending, approved, rejected
-    reviewedBy: text("reviewed_by").references(() => users.id),
+    reviewedBy: text("reviewed_by").references(() => usersBase.id),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     reviewNotes: text("review_notes"), // Optional notes from organizer
     qrCodeToken: uuid("qr_code_token").defaultRandom(), // Generated when approved
@@ -37,3 +37,4 @@ export const guestListRequests = pgTable(
     ),
   })
 );
+

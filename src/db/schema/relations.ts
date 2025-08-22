@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { events } from "./events";
 import { attendees } from "./attendees";
-import { users } from "./users";
+import { usersBase } from "./users";
 import { guestListRequests } from "./guest-list-requests";
 import { proactiveGuestList } from "./proactive-guest-list";
 
@@ -9,9 +9,9 @@ export const eventsRelations = relations(events, ({ many, one }) => ({
   attendees: many(attendees),
   guestListRequests: many(guestListRequests),
   proactiveGuests: many(proactiveGuestList),
-  creator: one(users, {
+  creator: one(usersBase, {
     fields: [events.createdBy],
-    references: [users.id],
+    references: [usersBase.id],
   }),
 }));
 
@@ -20,14 +20,14 @@ export const attendeesRelations = relations(attendees, ({ one, many }) => ({
     fields: [attendees.eventId],
     references: [events.id],
   }),
-  user: one(users, {
+  user: one(usersBase, {
     fields: [attendees.userId],
-    references: [users.id],
+    references: [usersBase.id],
   }),
   guestListRequests: many(guestListRequests),
 }));
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersBaseRelations = relations(usersBase, ({ many }) => ({
   createdEvents: many(events),
   attendeeRecords: many(attendees),
   guestListRequestsAsRequester: many(guestListRequests, {
@@ -48,14 +48,14 @@ export const guestListRequestsRelations = relations(guestListRequests, ({ one })
     fields: [guestListRequests.attendeeId],
     references: [attendees.id],
   }),
-  requester: one(users, {
+  requester: one(usersBase, {
     fields: [guestListRequests.requesterId],
-    references: [users.id],
+    references: [usersBase.id],
     relationName: "requesterRequests",
   }),
-  reviewer: one(users, {
+  reviewer: one(usersBase, {
     fields: [guestListRequests.reviewedBy],
-    references: [users.id],
+    references: [usersBase.id],
     relationName: "reviewerRequests",
   }),
 }));
@@ -65,8 +65,8 @@ export const proactiveGuestListRelations = relations(proactiveGuestList, ({ one 
     fields: [proactiveGuestList.eventId],
     references: [events.id],
   }),
-  addedByUser: one(users, {
+  addedByUser: one(usersBase, {
     fields: [proactiveGuestList.addedBy],
-    references: [users.id],
+    references: [usersBase.id],
   }),
 }));

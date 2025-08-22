@@ -7,7 +7,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 import { events } from "./events";
-import { users } from "./users";
+import { usersBase } from "./users";
 
 export const proactiveGuestList = pgTable(
   "proactive_guest_list",
@@ -22,7 +22,7 @@ export const proactiveGuestList = pgTable(
     personalMessage: text("personal_message"), // Custom message for this guest
     addedBy: text("added_by")
       .notNull()
-      .references(() => users.id),
+      .references(() => usersBase.id),
     status: text("status").notNull().default("active"), // active, archived, inactive
     qrCodeToken: uuid("qr_code_token").defaultRandom().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
@@ -51,3 +51,4 @@ export const proactiveGuestList = pgTable(
     ),
   })
 );
+

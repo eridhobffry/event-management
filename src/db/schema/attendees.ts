@@ -8,7 +8,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { events } from "./events";
-import { users } from "./users";
+import { usersBase } from "./users";
 import { sql } from "drizzle-orm";
 
 export const attendees = pgTable(
@@ -18,7 +18,7 @@ export const attendees = pgTable(
     eventId: uuid("event_id")
       .notNull()
       .references(() => events.id),
-    userId: text("user_id").references(() => users.id),
+    userId: text("user_id").references(() => usersBase.id),
     name: text("name").notNull(),
     email: text("email").notNull(),
     phone: text("phone"),
@@ -42,3 +42,4 @@ export const attendees = pgTable(
     ),
   })
 );
+
