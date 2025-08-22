@@ -3,13 +3,16 @@ import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { randomUUID } from "node:crypto";
 import * as schema from "@/db/schema";
-import { events, attendees, users, guestListRequests, proactiveGuestList } from "@/db/schema";
+import {
+  events,
+  attendees,
+  users,
+  guestListRequests,
+  proactiveGuestList,
+} from "@/db/schema";
 
 let migrationClient: ReturnType<typeof postgres>;
 let db: PostgresJsDatabase<typeof schema>;
-
-// Check if we're in test environment or if database URL is not available
-const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
 
 if (!process.env.NEON_DATABASE_URL) {
   console.warn(
@@ -121,11 +124,11 @@ if (!process.env.NEON_DATABASE_URL) {
               });
               resolve(insertedRecords);
               return insertedRecords;
-            }
-          })
+            },
+          }),
         };
         return valuesMethod;
-      }
+      },
     };
   }
 
@@ -172,19 +175,22 @@ if (!process.env.NEON_DATABASE_URL) {
       then: async (resolve: (data: any) => void) => {
         mockStorage[tableName].length = 0;
         resolve(undefined);
-      }
+      },
     };
   }
 
   function getTableName(table: any): keyof typeof mockStorage {
     // Simple string-based matching for Drizzle table objects
-    const tableStr = table?.toString?.() || '';
-    if (tableStr.includes('events') || table === events) return 'events';
-    if (tableStr.includes('attendees') || table === attendees) return 'attendees'; 
-    if (tableStr.includes('users') || table === users) return 'users';
-    if (tableStr.includes('guestListRequests') || table === guestListRequests) return 'guestListRequests';
-    if (tableStr.includes('proactiveGuestList') || table === proactiveGuestList) return 'proactiveGuestList';
-    return 'events'; // fallback
+    const tableStr = table?.toString?.() || "";
+    if (tableStr.includes("events") || table === events) return "events";
+    if (tableStr.includes("attendees") || table === attendees)
+      return "attendees";
+    if (tableStr.includes("users") || table === users) return "users";
+    if (tableStr.includes("guestListRequests") || table === guestListRequests)
+      return "guestListRequests";
+    if (tableStr.includes("proactiveGuestList") || table === proactiveGuestList)
+      return "proactiveGuestList";
+    return "events"; // fallback
   }
 
   migrationClient = {} as unknown as ReturnType<typeof postgres>;
@@ -199,7 +205,11 @@ if (!process.env.NEON_DATABASE_URL) {
             const updatedRecords = mockStorage[tbl].map((r: any) => {
               const updated: any = { ...r, ...data };
               // Auto-generate tokens and timestamps when appropriate
-              if (tbl === "guestListRequests" && data?.status === "approved" && !updated.qrCodeToken) {
+              if (
+                tbl === "guestListRequests" &&
+                data?.status === "approved" &&
+                !updated.qrCodeToken
+              ) {
                 updated.qrCodeToken = randomUUID();
               }
               if (tbl === "proactiveGuestList" && data?.status === "archived") {
@@ -216,7 +226,11 @@ if (!process.env.NEON_DATABASE_URL) {
             const tbl = getTableName(table);
             const updatedRecords = mockStorage[tbl].map((r: any) => {
               const updated: any = { ...r, ...data };
-              if (tbl === "guestListRequests" && data?.status === "approved" && !updated.qrCodeToken) {
+              if (
+                tbl === "guestListRequests" &&
+                data?.status === "approved" &&
+                !updated.qrCodeToken
+              ) {
                 updated.qrCodeToken = randomUUID();
               }
               if (tbl === "proactiveGuestList" && data?.status === "archived") {
@@ -227,9 +241,9 @@ if (!process.env.NEON_DATABASE_URL) {
             });
             mockStorage[tbl] = updatedRecords;
             resolve(updatedRecords);
-          }
-        })
-      })
+          },
+        }),
+      }),
     }),
     delete: (table: any) => createMockDeleteQuery(getTableName(table)),
     query: {
@@ -239,7 +253,8 @@ if (!process.env.NEON_DATABASE_URL) {
       },
       attendees: {
         findMany: async () => mockStorage.attendees,
-        findFirst: async (_options?: any) => mockStorage.attendees[0] || undefined,
+        findFirst: async (_options?: any) =>
+          mockStorage.attendees[0] || undefined,
       },
       users: {
         findMany: async (_options?: any) => mockStorage.users,
@@ -247,11 +262,13 @@ if (!process.env.NEON_DATABASE_URL) {
       },
       guestListRequests: {
         findMany: async (_options?: any) => mockStorage.guestListRequests,
-        findFirst: async (_options?: any) => mockStorage.guestListRequests[0] || undefined,
+        findFirst: async (_options?: any) =>
+          mockStorage.guestListRequests[0] || undefined,
       },
       proactiveGuestList: {
         findMany: async (_options?: any) => mockStorage.proactiveGuestList,
-        findFirst: async (_options?: any) => mockStorage.proactiveGuestList[0] || undefined,
+        findFirst: async (_options?: any) =>
+          mockStorage.proactiveGuestList[0] || undefined,
       },
     },
   } as unknown as PostgresJsDatabase<typeof schema>;

@@ -57,6 +57,11 @@ const data = {
       icon: IconCalendar,
     },
     {
+      title: "Check-In",
+      url: "/organizer/check-in",
+      icon: IconCamera,
+    },
+    {
       title: "Guest List",
       url: "/dashboard/guest-list",
       icon: IconCrown,

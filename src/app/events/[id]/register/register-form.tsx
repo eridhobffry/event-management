@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import { registerAttendee } from "@/actions/attendees";
+import { registerAttendee, resendRSVPConfirmation } from "@/actions/attendees";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -55,7 +55,29 @@ export default function RegisterForm({ eventId }: Props) {
         ...data,
       });
       if (res?.errors || res?.message) {
-        toast.error(res.message || "Registration failed");
+        console.log("🚀 ~ onSubmit ~ res:", res);
+        const msg = res?.message ?? "Registration failed";
+        if (msg.toLowerCase().includes("already registered")) {
+          toast("You're already on the list", {
+            description:
+              "We can resend your confirmation email if you need it.",
+            action: {
+              label: "Resend confirmation",
+              onClick: async () => {
+                const r = await resendRSVPConfirmation({
+                  eventId,
+                  email: data.email,
+                });
+                toast.success(
+                  r?.message ||
+                    "If a registration exists for this email, we’ve resent the confirmation."
+                );
+              },
+            },
+          });
+        } else {
+          toast.error(msg);
+        }
       } else if (res?.success) {
         // Show success animation before redirect
         setIsSuccess(true);

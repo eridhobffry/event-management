@@ -1,4 +1,7 @@
 import { sendEmail } from "./email";
+import { getBaseUrl } from "./config";
+import { escapeHtml } from "./html";
+import { z } from "zod";
 
 export interface GuestListRequestNotification {
   organizerEmail: string;
@@ -40,13 +43,56 @@ export interface ProactiveGuestListNotification {
   qrCodeToken?: string;
 }
 
+// Zod validation schemas
+const RequestSchema = z.object({
+  organizerEmail: z.string().email(),
+  eventName: z.string().min(1),
+  eventId: z.string().min(1),
+  requesterName: z.string().min(1),
+  requesterEmail: z.string().email(),
+  reason: z.string().min(1),
+  requestId: z.string().min(1),
+});
+
+const ApprovalSchema = z.object({
+  requesterEmail: z.string().email(),
+  requesterName: z.string().min(1),
+  eventName: z.string().min(1),
+  eventId: z.string().min(1),
+  eventDate: z.date(),
+  qrCodeToken: z.string().min(1),
+  reviewNotes: z.string().optional(),
+});
+
+const RejectionSchema = z.object({
+  requesterEmail: z.string().email(),
+  requesterName: z.string().min(1),
+  eventName: z.string().min(1),
+  eventId: z.string().min(1),
+  reviewNotes: z.string().optional(),
+});
+
+const ProactiveSchema = z.object({
+  type: z.string(),
+  guestEmail: z.string().email(),
+  guestName: z.string().min(1),
+  eventName: z.string().min(1),
+  eventId: z.string().min(1),
+  eventDate: z.date(),
+  guestTitle: z.string().nullable().optional(),
+  personalMessage: z.string().nullable().optional(),
+  qrCodeToken: z.string().optional(),
+});
+
 /**
  * Send notification to organizer about new guest list request
  */
 export async function sendGuestListRequestNotification(
   data: GuestListRequestNotification
 ) {
-  const subject = `🙋‍♂️ Guest List Request: ${data.eventName}`;
+  const d = RequestSchema.parse(data);
+  const baseUrl = getBaseUrl();
+  const subject = `🙋‍♂️ Guest List Request: ${d.eventName}`;
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
@@ -59,26 +105,24 @@ export async function sendGuestListRequestNotification(
         <p style="font-size: 16px; color: #374151;">Someone has requested to be added to the guest list for your event:</p>
         
         <div style="background: #f8fafc; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #667eea;">
-          <h3 style="color: #667eea; margin-top: 0; font-size: 18px;">📅 ${
-            data.eventName
-          }</h3>
+          <h3 style="color: #667eea; margin-top: 0; font-size: 18px;">📅 ${escapeHtml(
+            d.eventName
+          )}</h3>
           <div style="margin: 15px 0;">
-            <p style="margin: 8px 0; color: #374151;"><strong>👤 Requester:</strong> ${
-              data.requesterName
-            }</p>
-            <p style="margin: 8px 0; color: #374151;"><strong>✉️ Email:</strong> ${
-              data.requesterEmail
-            }</p>
-            <p style="margin: 8px 0; color: #374151;"><strong>📝 Reason:</strong> ${
-              data.reason
-            }</p>
+            <p style="margin: 8px 0; color: #374151;"><strong>👤 Requester:</strong> ${escapeHtml(
+              d.requesterName
+            )}</p>
+            <p style="margin: 8px 0; color: #374151;"><strong>✉️ Email:</strong> ${escapeHtml(
+              d.requesterEmail
+            )}</p>
+            <p style="margin: 8px 0; color: #374151;"><strong>📝 Reason:</strong> ${escapeHtml(
+              d.reason
+            )}</p>
           </div>
         </div>
         
         <div style="text-align: center; margin: 35px 0;">
-          <a href="${
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-          }/dashboard/guest-list" 
+          <a href="${baseUrl}/dashboard/guest-list" 
              style="background: #059669; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 0 10px 10px 0; font-weight: 600;">
             ✅ Review Requests
           </a>
@@ -86,7 +130,7 @@ export async function sendGuestListRequestNotification(
         
         <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 25px 0;">
           <p style="margin: 0; color: #6b7280; font-size: 14px;">
-            💡 <strong>Tip:</strong> You can review and manage all guest list requests from your organizer dashboard. 
+            💡 <strong>Tip:</strong> You can review and manage all guest list requests from your organizer dashboard.
             Approved guests will receive a special QR code for VIP entry.
           </p>
         </div>
@@ -96,16 +140,16 @@ export async function sendGuestListRequestNotification(
       
       <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
         <p style="margin: 0; color: #6b7280; font-size: 12px;">
-          This notification was sent because you are the organizer of ${
-            data.eventName
-          }
+          This notification was sent because you are the organizer of ${escapeHtml(
+            d.eventName
+          )}
         </p>
       </div>
     </div>
   `;
 
   return sendEmail({
-    to: data.organizerEmail,
+    to: d.organizerEmail,
     subject,
     html,
   });
@@ -117,10 +161,12 @@ export async function sendGuestListRequestNotification(
 export async function sendGuestListApprovalNotification(
   data: GuestListApprovalNotification
 ) {
-  const subject = `🎉 You're on the guest list: ${data.eventName}`;
+  const d = ApprovalSchema.parse(data);
+  const baseUrl = getBaseUrl();
+  const subject = `🎉 You're on the guest list: ${d.eventName}`;
 
   // Generate QR code data URL for email
-  const qrCodeDataUrl = await generateQRCodeDataUrl(data.qrCodeToken);
+  const qrCodeDataUrl = await generateQRCodeDataUrl(d.qrCodeToken);
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
@@ -129,22 +175,22 @@ export async function sendGuestListApprovalNotification(
       </div>
       
       <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #374151;">Hi ${
-          data.requesterName
-        },</p>
+        <p style="font-size: 16px; color: #374151;">Hi ${escapeHtml(
+          d.requesterName
+        )},</p>
         
         <p style="font-size: 16px; color: #374151;">
-          Fantastic news! You've been <strong>approved</strong> for the guest list for <strong>${
-            data.eventName
-          }</strong>.
+          Fantastic news! You've been <strong>approved</strong> for the guest list for <strong>${escapeHtml(
+            d.eventName
+          )}</strong>.
         </p>
         
         <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #059669; text-align: center;">
           <h3 style="color: #059669; margin-top: 0; font-size: 20px;">✅ VIP Guest List Confirmed</h3>
-          <p style="margin: 10px 0; color: #374151;"><strong>Event:</strong> ${
-            data.eventName
-          }</p>
-          <p style="margin: 10px 0; color: #374151;"><strong>Date:</strong> ${data.eventDate.toLocaleDateString(
+          <p style="margin: 10px 0; color: #374151;"><strong>Event:</strong> ${escapeHtml(
+            d.eventName
+          )}</p>
+          <p style="margin: 10px 0; color: #374151;"><strong>Date:</strong> ${d.eventDate.toLocaleDateString(
             "en-US",
             {
               weekday: "long",
@@ -156,8 +202,10 @@ export async function sendGuestListApprovalNotification(
           <p style="margin: 10px 0; color: #374151;"><strong>Status:</strong> VIP Guest List Access</p>
           <p style="margin: 10px 0; color: #374151;"><strong>Entry:</strong> Free with QR code below</p>
           ${
-            data.reviewNotes
-              ? `<p style="margin: 15px 0; color: #059669; font-style: italic;"><strong>Note from organizer:</strong> ${data.reviewNotes}</p>`
+            d.reviewNotes
+              ? `<p style="margin: 15px 0; color: #059669; font-style: italic;"><strong>Note from organizer:</strong> ${escapeHtml(
+                  d.reviewNotes
+                )}</p>`
               : ""
           }
         </div>
@@ -182,9 +230,7 @@ export async function sendGuestListApprovalNotification(
         </div>
         
         <div style="text-align: center; margin: 35px 0;">
-          <a href="${
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-          }/events/${data.eventId}" 
+          <a href="${baseUrl}/events/${d.eventId}" 
              style="background: #667eea; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">
             📅 View Event Details
           </a>
@@ -207,7 +253,7 @@ export async function sendGuestListApprovalNotification(
   `;
 
   return sendEmail({
-    to: data.requesterEmail,
+    to: d.requesterEmail,
     subject,
     html,
   });
@@ -219,7 +265,9 @@ export async function sendGuestListApprovalNotification(
 export async function sendGuestListRejectionNotification(
   data: GuestListRejectionNotification
 ) {
-  const subject = `Guest List Request Update: ${data.eventName}`;
+  const d = RejectionSchema.parse(data);
+  const baseUrl = getBaseUrl();
+  const subject = `Guest List Request Update: ${d.eventName}`;
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
       <div style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); padding: 20px; text-align: center;">
@@ -227,14 +275,14 @@ export async function sendGuestListRejectionNotification(
       </div>
       
       <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #374151;">Hi ${
-          data.requesterName
-        },</p>
+        <p style="font-size: 16px; color: #374151;">Hi ${escapeHtml(
+          d.requesterName
+        )},</p>
         
         <p style="font-size: 16px; color: #374151;">
-          Thank you for your interest in joining the guest list for <strong>${
-            data.eventName
-          }</strong>.
+          Thank you for your interest in joining the guest list for <strong>${escapeHtml(
+            d.eventName
+          )}</strong>.
         </p>
         
         <div style="background: #fef2f2; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #dc2626;">
@@ -242,8 +290,10 @@ export async function sendGuestListRejectionNotification(
             Unfortunately, we're unable to accommodate your guest list request at this time.
           </p>
           ${
-            data.reviewNotes
-              ? `<p style="margin: 15px 0 0 0; color: #dc2626; font-style: italic;"><strong>Note from organizer:</strong> ${data.reviewNotes}</p>`
+            d.reviewNotes
+              ? `<p style="margin: 15px 0 0 0; color: #dc2626; font-style: italic;"><strong>Note from organizer:</strong> ${escapeHtml(
+                  d.reviewNotes
+                )}</p>`
               : ""
           }
         </div>
@@ -259,15 +309,11 @@ export async function sendGuestListRejectionNotification(
         </div>
         
         <div style="text-align: center; margin: 35px 0;">
-          <a href="${
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-          }/events/${data.eventId}" 
+          <a href="${baseUrl}/events/${d.eventId}" 
              style="background: #4f46e5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 0 10px 10px 0; font-weight: 600;">
             📅 View Event Details
           </a>
-          <a href="${
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-          }/events" 
+          <a href="${baseUrl}/events" 
              style="background: #6b7280; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 0 10px 10px 0; font-weight: 600;">
             🔍 Browse Other Events
           </a>
@@ -289,7 +335,7 @@ export async function sendGuestListRejectionNotification(
   `;
 
   return sendEmail({
-    to: data.requesterEmail,
+    to: d.requesterEmail,
     subject,
     html,
   });
@@ -301,17 +347,18 @@ export async function sendGuestListRejectionNotification(
 export async function sendProactiveGuestListNotification(
   data: ProactiveGuestListNotification
 ) {
-  switch (data.type) {
+  const d = ProactiveSchema.parse(data);
+  switch (d.type) {
     case "added":
-      return sendProactiveGuestAddedEmail(data);
+      return sendProactiveGuestAddedEmail(d as ProactiveGuestListNotification);
     case "updated":
-      return sendProactiveGuestUpdatedEmail(data);
+      return sendProactiveGuestUpdatedEmail(d as ProactiveGuestListNotification);
     case "removed":
-      return sendProactiveGuestRemovedEmail(data);
+      return sendProactiveGuestRemovedEmail(d as ProactiveGuestListNotification);
     case "archived":
-      return sendProactiveGuestArchivedEmail(data);
+      return sendProactiveGuestArchivedEmail(d as ProactiveGuestListNotification);
     default:
-      throw new Error(`Unknown notification type: ${data.type}`);
+      throw new Error(`Unknown notification type: ${d.type}`);
   }
 }
 
@@ -330,27 +377,27 @@ async function sendProactiveGuestAddedEmail(
       </div>
       
       <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #374151;">Hi ${data.guestName},</p>
+        <p style="font-size: 16px; color: #374151;">Hi ${escapeHtml(data.guestName)},</p>
         
         <p style="font-size: 16px; color: #374151;">
-          Great news! You've been personally added to the <strong>VIP Guest List</strong> for <strong>${
+          Great news! You've been personally added to the <strong>VIP Guest List</strong> for <strong>${escapeHtml(
             data.eventName
-          }</strong> by the event organizer.
+          )}</strong> by the event organizer.
         </p>
         
         ${
           data.guestTitle
             ? `<div style="background: #F3E8FF; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #8B5CF6;">
-            <h3 style="color: #7C3AED; margin-top: 0;">✨ Your VIP Status: ${data.guestTitle}</h3>
+            <h3 style="color: #7C3AED; margin-top: 0;">✨ Your VIP Status: ${escapeHtml(data.guestTitle || "")}</h3>
           </div>`
             : ""
         }
         
         <div style="background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #059669; text-align: center;">
           <h3 style="color: #059669; margin-top: 0; font-size: 20px;">🎫 VIP Guest List Access</h3>
-          <p style="margin: 10px 0; color: #374151;"><strong>Event:</strong> ${
+          <p style="margin: 10px 0; color: #374151;"><strong>Event:</strong> ${escapeHtml(
             data.eventName
-          }</p>
+          )}</p>
           <p style="margin: 10px 0; color: #374151;"><strong>Date:</strong> ${data.eventDate.toLocaleDateString(
             "en-US",
             {
@@ -363,7 +410,9 @@ async function sendProactiveGuestAddedEmail(
           <p style="margin: 10px 0; color: #374151;"><strong>Status:</strong> VIP Guest - No Payment Required</p>
           ${
             data.personalMessage
-              ? `<p style="margin: 15px 0; color: #059669; font-style: italic;"><strong>Personal message:</strong> ${data.personalMessage}</p>`
+              ? `<p style=\"margin: 15px 0; color: #059669; font-style: italic;\"><strong>Personal message:</strong> ${escapeHtml(
+                  data.personalMessage || ""
+                )}</p>`
               : ""
           }
         </div>
@@ -401,9 +450,9 @@ async function sendProactiveGuestAddedEmail(
       
       <div style="background: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
         <p style="margin: 0; color: #6b7280; font-size: 12px;">
-          You received this because you've been added to the VIP guest list for ${
+          You received this because you've been added to the VIP guest list for ${escapeHtml(
             data.eventName
-          }
+          )}
         </p>
       </div>
     </div>
@@ -431,18 +480,18 @@ async function sendProactiveGuestUpdatedEmail(
       </div>
       
       <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #374151;">Hi ${data.guestName},</p>
+        <p style="font-size: 16px; color: #374151;">Hi ${escapeHtml(data.guestName)},</p>
         
         <p style="font-size: 16px; color: #374151;">
-          Your VIP guest list details for <strong>${
+          Your VIP guest list details for <strong>${escapeHtml(
             data.eventName
-          }</strong> have been updated.
+          )}</strong> have been updated.
         </p>
         
         ${
           data.guestTitle
             ? `<div style="background: #DBEAFE; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #3B82F6;">
-            <h3 style="color: #1E40AF; margin-top: 0;">✨ Your VIP Status: ${data.guestTitle}</h3>
+            <h3 style="color: #1E40AF; margin-top: 0;">✨ Your VIP Status: ${escapeHtml(data.guestTitle || "")}</h3>
           </div>`
             : ""
         }
@@ -451,7 +500,9 @@ async function sendProactiveGuestUpdatedEmail(
           data.personalMessage
             ? `<div style="background: #F0FDF4; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #16A34A;">
             <h4 style="color: #15803D; margin-top: 0;">💌 Updated Message:</h4>
-            <p style="color: #374151; margin: 0; font-style: italic;">${data.personalMessage}</p>
+            <p style="color: #374151; margin: 0; font-style: italic;">${escapeHtml(
+              data.personalMessage || ""
+            )}</p>
           </div>`
             : ""
         }
@@ -485,7 +536,7 @@ async function sendProactiveGuestRemovedEmail(
   data: ProactiveGuestListNotification
 ) {
   const subject = `Guest List Update - ${data.eventName}`;
-
+  const baseUrl = getBaseUrl();
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
       <div style="background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%); padding: 20px; text-align: center;">
@@ -493,12 +544,12 @@ async function sendProactiveGuestRemovedEmail(
       </div>
       
       <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #374151;">Hi ${data.guestName},</p>
+        <p style="font-size: 16px; color: #374151;">Hi ${escapeHtml(data.guestName)},</p>
         
         <p style="font-size: 16px; color: #374151;">
-          We're writing to inform you that your VIP guest list access for <strong>${
+          We're writing to inform you that your VIP guest list access for <strong>${escapeHtml(
             data.eventName
-          }</strong> has been removed by the event organizer.
+          )}</strong> has been removed by the event organizer.
         </p>
         
         <div style="background: #FEF2F2; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #DC2626;">
@@ -517,9 +568,7 @@ async function sendProactiveGuestRemovedEmail(
         </div>
         
         <div style="text-align: center; margin: 35px 0;">
-          <a href="${
-            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-          }/events/${data.eventId}" 
+          <a href="${baseUrl}/events/${data.eventId}" 
              style="background: #4f46e5; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 600;">
             📅 View Event Details
           </a>
@@ -543,7 +592,6 @@ async function sendProactiveGuestArchivedEmail(
   data: ProactiveGuestListNotification
 ) {
   const subject = `Guest List Status Update - ${data.eventName}`;
-
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
       <div style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); padding: 20px; text-align: center;">
@@ -551,10 +599,12 @@ async function sendProactiveGuestArchivedEmail(
       </div>
       
       <div style="padding: 30px;">
-        <p style="font-size: 16px; color: #374151;">Hi ${data.guestName},</p>
+        <p style="font-size: 16px; color: #374151;">Hi ${escapeHtml(data.guestName)},</p>
         
         <p style="font-size: 16px; color: #374151;">
-          Your VIP guest list status for <strong>${data.eventName}</strong> has been archived by the event organizer.
+          Your VIP guest list status for <strong>${escapeHtml(
+            data.eventName
+          )}</strong> has been archived by the event organizer.
         </p>
         
         <div style="background: #FFFBEB; padding: 25px; border-radius: 12px; margin: 25px 0; border-left: 4px solid #F59E0B;">
