@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { extractUnifiedToken } from "@/lib/token";
 
 type UnifiedApiResponse =
   | {
@@ -38,20 +39,8 @@ const USE_UNIFIED =
 function extractToken(raw: string): string | null {
   const s = raw.trim();
   if (!s) return null;
-  try {
-    // If it's a full URL, read token param
-    if (s.startsWith("http://") || s.startsWith("https://")) {
-      const url = new URL(s);
-      const t = url.searchParams.get("token");
-      return t || null;
-    }
-  } catch {}
-  // UUID v4-ish check (lenient)
-  const uuidRegex =
-    /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}/;
-  const match = s.match(uuidRegex);
-  if (match) return match[0];
-  return null;
+  const t = extractUnifiedToken(s);
+  return t || null;
 }
 
 export default function CheckInClient() {
@@ -91,9 +80,9 @@ export default function CheckInClient() {
     };
   }, []);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (override?: string) => {
     setResult(null);
-    const t = token;
+    const t = override ?? token;
     if (!t) {
       setResult({
         ok: false,
@@ -234,11 +223,12 @@ export default function CheckInClient() {
             const raw = barcodes[0].rawValue as string;
             const t = extractToken(raw);
             if (t) {
+              // Store the token directly; the memoized extractor accepts both URLs and bare tokens
               setInput(t);
               stopCamera();
               // Auto submit for speed
               setTimeout(() => {
-                void handleSubmit();
+                void handleSubmit(t);
               }, 50);
               return;
             }
@@ -291,7 +281,7 @@ export default function CheckInClient() {
               <span>Awaiting token...</span>
             )}
           </div>
-          <Button onClick={handleSubmit} disabled={!token || loading}>
+          <Button onClick={() => handleSubmit()} disabled={!token || loading}>
             {loading ? "Checking..." : "Check in / Undo"}
           </Button>
           <Button

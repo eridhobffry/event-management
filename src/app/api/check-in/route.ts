@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { tickets, proactiveGuestList, checkInAudit } from "@/db/schema";
-import { eq, and, isNull, isNotNull } from "drizzle-orm";
+import { tickets, proactiveGuestList, checkInAudit, attendees } from "@/db/schema";
+import { eq, and, isNull, isNotNull, sql } from "drizzle-orm";
 import { stackServerApp } from "@/stack";
 import { extractUnifiedToken, classifyToken } from "@/lib/token";
 import { allowRequest, rateLimitKeyFromRequest } from "@/lib/rate-limit";
@@ -26,7 +26,7 @@ function friendly404(token: string) {
 async function findTicketByToken(rawToken: string) {
   if (process.env.NEON_DATABASE_URL) {
     const [row] = await db
-      .select({ id: tickets.id, checkedInAt: tickets.checkedInAt, eventId: tickets.eventId, status: tickets.status })
+      .select({ id: tickets.id, checkedInAt: tickets.checkedInAt, eventId: tickets.eventId, status: tickets.status, attendeeEmail: tickets.attendeeEmail })
       .from(tickets)
       .where(eq(tickets.qrCodeToken, rawToken))
       .limit(1);
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
   const { kind, value } = classifyToken(tokenInput);
 
   // Resolve entity
-  type TicketEntity = { id: string; eventId: string; checkedInAt: Date | null; status?: string };
+  type TicketEntity = { id: string; eventId: string; checkedInAt: Date | null; status?: string; attendeeEmail?: string | null };
   type GuestEntity = { id: string; eventId: string; lastUsed: Date | null; status?: string };
   let entity: TicketEntity | GuestEntity | null = null;
   let entityType: "ticket" | "guest" | null = null;
@@ -189,6 +189,14 @@ export async function POST(req: Request) {
           .update(tickets)
           .set({ checkedInAt: null, status: "issued" })
           .where(and(eq(tickets.id, ticket.id), isNotNull(tickets.checkedInAt)));
+        // Reflect undo in attendees table when possible
+        if (ticket.attendeeEmail) {
+          const lower = ticket.attendeeEmail.toLowerCase();
+          await db
+            .update(attendees)
+            .set({ checkedIn: null })
+            .where(and(eq(attendees.eventId, ticket.eventId), sql`lower(${attendees.email}) = ${lower}`));
+        }
       } else {
         await db.update(tickets).set({ checkedInAt: null, status: "issued" }).where(eq(tickets.id, ticket.id));
       }
@@ -227,6 +235,14 @@ export async function POST(req: Request) {
         { ok: false, error: "Already checked in", ticketId: ticket.id },
         { status: 409 }
       );
+    }
+    // Reflect check-in in attendees table when possible
+    if (process.env.NEON_DATABASE_URL && ticket.attendeeEmail) {
+      const lower = ticket.attendeeEmail.toLowerCase();
+      await db
+        .update(attendees)
+        .set({ checkedIn: now })
+        .where(and(eq(attendees.eventId, ticket.eventId), sql`lower(${attendees.email}) = ${lower}`));
     }
     await audit({
       eventId: ticket.eventId,

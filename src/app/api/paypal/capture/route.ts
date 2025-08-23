@@ -111,7 +111,7 @@ export async function POST(req: Request) {
             orderId: orderRow.id,
             ticketTypeId: it.ticketTypeId,
             attendeeName: null,
-            attendeeEmail: null,
+            attendeeEmail: orderRow.email ?? null,
           });
         }
       }
@@ -136,7 +136,8 @@ export async function POST(req: Request) {
 
     if (txResult?.createdCount && txResult.createdCount > 0) {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const requestOrigin = new URL(req.url).origin;
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || requestOrigin;
         const [evt] = await db
           .select({ name: events.name, date: events.date, location: events.location })
           .from(events)

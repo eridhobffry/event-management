@@ -140,8 +140,13 @@ export async function POST(req: Request) {
       // Create PayPal order
       const accessToken = await getPayPalAccessToken();
       const apiBase = getPayPalApiBase();
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-      const baseUrl = appUrl ?? "http://localhost:3000";
+      const requestOrigin = new URL(req.url).origin;
+      const isProd = process.env.NODE_ENV === "production";
+      const baseUrl = isProd
+        ? process.env.NEXT_PUBLIC_APP_URL || requestOrigin
+        : requestOrigin;
+      const returnUrl = new URL("/paypal/return", baseUrl).toString();
+      const cancelUrl = new URL("/paypal/cancel", baseUrl).toString();
       const res = await fetch(`${apiBase}/v2/checkout/orders`, {
         method: "POST",
         headers: {
@@ -163,8 +168,8 @@ export async function POST(req: Request) {
             brand_name: "Event Management",
             shipping_preference: "NO_SHIPPING",
             user_action: "PAY_NOW",
-            return_url: `${baseUrl}/paypal/return`,
-            cancel_url: `${baseUrl}/paypal/cancel`,
+            return_url: returnUrl,
+            cancel_url: cancelUrl,
           },
         }),
       });

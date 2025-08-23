@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { tickets } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { tickets, attendees } from "@/db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { stackServerApp } from "@/stack";
 
 export const runtime = "nodejs";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 async function toggleCheckIn(token: string) {
   const [row] = await db
-    .select({ id: tickets.id, checkedInAt: tickets.checkedInAt, status: tickets.status })
+    .select({ id: tickets.id, checkedInAt: tickets.checkedInAt, status: tickets.status, eventId: tickets.eventId, attendeeEmail: tickets.attendeeEmail })
     .from(tickets)
     .where(eq(tickets.qrCodeToken, token))
     .limit(1);
@@ -26,6 +26,15 @@ async function toggleCheckIn(token: string) {
       status: checkedIn ? "issued" : "checked_in",
     })
     .where(eq(tickets.id, row.id));
+
+  // Propagate to attendees if we can map by email within the same event
+  if (row.attendeeEmail) {
+    const lower = row.attendeeEmail.toLowerCase();
+    await db
+      .update(attendees)
+      .set({ checkedIn: checkedIn ? null : now })
+      .where(and(eq(attendees.eventId, row.eventId!), sql`lower(${attendees.email}) = ${lower}`));
+  }
 
   return {
     status: 200 as const,
