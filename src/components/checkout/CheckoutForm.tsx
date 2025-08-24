@@ -323,7 +323,13 @@ export function CheckoutForm({
       };
       setOrderId(data.orderId);
       if (data.approvalUrl) {
-        window.location.assign(data.approvalUrl);
+        // In mocked E2E mode, do not navigate away from the app. The test will
+        // call the capture API directly and then navigate to the return URL.
+        if (process.env.NEXT_PUBLIC_PAYPAL_E2E_MODE === "mock") {
+          // no-op: keep current page for test control
+        } else {
+          window.location.assign(data.approvalUrl);
+        }
       } else {
         throw new Error("Missing PayPal approval URL");
       }

@@ -16,6 +16,9 @@ export async function getPurchaseSuccessData(
   eventId: string,
   orderId: string | null
 ): Promise<PurchaseSuccessData | null> {
+  const isUUID = (s: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
   // Load event header fields
   const [event] = await db
     .select({ id: events.id, name: events.name, date: events.date, location: events.location })
@@ -28,7 +31,8 @@ export async function getPurchaseSuccessData(
   let order: PurchaseSuccessData["order"] = null;
   let items: PurchaseSuccessData["items"] = null;
 
-  if (orderId) {
+  const validOrderId = orderId && isUUID(orderId) ? orderId : null;
+  if (validOrderId) {
     const [row] = await db
       .select({
         id: orders.id,
@@ -37,7 +41,7 @@ export async function getPurchaseSuccessData(
         currency: orders.currency,
       })
       .from(orders)
-      .where(and(eq(orders.id, orderId), eq(orders.eventId, eventId)))
+      .where(and(eq(orders.id, validOrderId), eq(orders.eventId, eventId)))
       .limit(1);
 
     order = row ?? null;

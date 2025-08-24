@@ -8,6 +8,8 @@ export default function PayPalReturnPage() {
   const params = useSearchParams();
   const [status, setStatus] = useState<string>("Finalizing your payment…");
   const [error, setError] = useState<string | null>(null);
+  const isUUID = (s: string) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,9 +36,11 @@ export default function PayPalReturnPage() {
           throw new Error(data?.error || "Capture failed");
         }
         if (cancelled) return;
-        if (data.eventId && data.orderId) {
+        if (data.eventId) {
           const url = new URL(`/events/${data.eventId}/purchase/success`, window.location.origin);
-          url.searchParams.set("order_id", data.orderId);
+          if (data.orderId && isUUID(data.orderId)) {
+            url.searchParams.set("order_id", data.orderId);
+          }
           router.replace(url.toString());
         } else {
           setStatus("Payment completed");

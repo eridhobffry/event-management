@@ -23,6 +23,15 @@ export async function POST(req: Request) {
     }
     const { paypalOrderId } = parsed.data;
 
+    // In mocked E2E runs, do not contact PayPal. Let the test harness handle
+    // full success semantics via its own mocked responses on the client path.
+    const isMock =
+      process.env.PAYPAL_E2E_MODE === "mock" ||
+      process.env.NEXT_PUBLIC_PAYPAL_E2E_MODE === "mock";
+    if (isMock) {
+      return NextResponse.json({ ok: true, received: true });
+    }
+
     const accessToken = await getPayPalAccessToken();
     const base = getPayPalApiBase();
 
@@ -31,6 +40,7 @@ export async function POST(req: Request) {
       headers: { Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
     });
+
     if (!detailsRes.ok) {
       const text = await detailsRes.text().catch(() => "");
       return NextResponse.json({ error: `PayPal get order error: ${detailsRes.status} ${text}` }, { status: 502 });
@@ -43,6 +53,11 @@ export async function POST(req: Request) {
 
     const referenceId: string | undefined = details?.purchase_units?.[0]?.reference_id;
     const status: string | undefined = details?.status;
+    console.log("paypal:capture:details", {
+      paypalOrderId,
+      status,
+      referenceId,
+    });
 
     if (!referenceId) {
       return NextResponse.json({ error: "Missing reference_id in PayPal order" }, { status: 400 });
@@ -134,6 +149,13 @@ export async function POST(req: Request) {
       return { createdCount: tokens.length, tokens };
     });
 
+    console.log("paypal:capture:tx_result", {
+      orderId: orderRow.id,
+      eventId: orderRow.eventId,
+      createdCount: txResult.createdCount,
+      tokensCount: txResult.tokens.length,
+    });
+
     if (txResult?.createdCount && txResult.createdCount > 0) {
       try {
         const requestOrigin = new URL(req.url).origin;
@@ -177,11 +199,27 @@ export async function POST(req: Request) {
             `;
 
         if (orderRow.email) {
+          console.log("paypal:capture:email:attempt", {
+            to: orderRow.email,
+            tokenCount: txResult.tokens.length,
+            orderId: orderRow.id,
+          });
           await sendEmail({ to: orderRow.email, subject, html });
+          console.log("paypal:capture:email:sent", {
+            to: orderRow.email,
+            tokenCount: txResult.tokens.length,
+            orderId: orderRow.id,
+          });
         }
       } catch (mailErr) {
         console.error("❌ Failed to send confirmation email:", mailErr);
       }
+    } else {
+      console.log("paypal:capture:email:skipped", {
+        reason: "no_new_tickets",
+        orderId: orderRow?.id,
+        eventId: orderRow?.eventId,
+      });
     }
 
     return NextResponse.json({ ok: true, orderId: orderRow?.id, eventId: orderRow?.eventId });
