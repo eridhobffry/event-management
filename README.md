@@ -80,6 +80,12 @@ Our CI runs unit tests (Vitest) and E2E tests (Playwright). The workflow will:
 
 See `docs/CI_SETUP.md` for a step‑by‑step guide to configure these and PayPal Sandbox accounts.
 
+## Inventory Reservations
+
+Learn how reservations are created, released, and how to run the cleanup task:
+
+- `docs/INVENTORY_RESERVATIONS.md`
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.

@@ -108,6 +108,17 @@ async function getCancel(query: URLSearchParams) {
   return GET(req as unknown as Request);
 }
 
+async function postCancel(payload: unknown) {
+  const { POST } = await import("@/app/api/paypal/cancel/route");
+  const url = new URL("http://localhost/api/paypal/cancel");
+  const req = new Request(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return POST(req as unknown as Request);
+}
+
 describe("/api/paypal/cancel", () => {
   beforeEach(() => {
     orderFound = true;
@@ -154,5 +165,16 @@ describe("/api/paypal/cancel", () => {
     expect(body).toEqual(expect.objectContaining({ ok: true, released: false, orderId: "order_1" }));
     expect(ticketTypeUpdates).toBe(0);
     expect(orderStatus).toBe("paid");
+  });
+
+  it("POST releases reservation when pending with no tickets", async () => {
+    orderStatus = "pending";
+    ticketsCount = 0;
+    const res = await postCancel({ paypalOrderId: "PAYPAL_ORDER_OK" });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual(expect.objectContaining({ ok: true, released: true, orderId: "order_1" }));
+    expect(ticketTypeUpdates).toBeGreaterThanOrEqual(2);
+    expect(orderStatus).toBe("failed");
   });
 });
