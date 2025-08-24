@@ -1,0 +1,74 @@
+name: Reservation Cleanup
+
+on:
+  schedule:
+    # Every 30 minutes
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      ttlMinutes:
+        description: "TTL in minutes to treat reservations as stale"
+        required: false
+        default: "30"
+
+jobs:
+  call-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call cleanup endpoint
+        env:
+          CLEANUP_URL: ${{ secrets.CLEANUP_URL }}
+          ADMIN_CLEANUP_SECRET: ${{ secrets.ADMIN_CLEANUP_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # If manually triggered, allow overriding TTL via input; otherwise default to 30
+          TTL_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.ttlMinutes || vars.RESERVATION_TTL_MINUTES || '30' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLEANUP_URL:-}" ]; then
+            echo "CLEANUP_URL not set. Set repository secret CLEANUP_URL to your deployed endpoint, e.g. https://your.app/api/admin/release-stale-reservations";
+            exit 0
+          fi
+          SECRET="${ADMIN_CLEANUP_SECRET:-${CRON_SECRET:-}}"
+          if [ -z "$SECRET" ]; then
+            echo "No secret provided. Set ADMIN_CLEANUP_SECRET or CRON_SECRET repository secret. Skipping.";
+            exit 0
+          fi
+          # Validate TTL
+          if ! [[ "$TTL_MINUTES" =~ ^[0-9]+$ ]]; then
+            echo "Invalid TTL_MINUTES '$TTL_MINUTES'. Using 30."
+            TTL_MINUTES=30
+          fi
+
+          echo "::group::Reservation cleanup request"
+          echo "Event: ${{ github.event_name }}"
+          echo "TTL_MINUTES: $TTL_MINUTES"
+          echo "Calling cleanup endpoint (response will follow)"
+          echo "::endgroup::"
+
+          set +e
+          RESP=$(curl --fail-with-body -S \
+            -H "x-cron-secret: $SECRET" \
+            "$CLEANUP_URL?ttlMinutes=$TTL_MINUTES" 2>&1)
+          CODE=$?
+          set -e
+
+          echo "$RESP"
+
+          {
+            echo "Reservation Cleanup"
+            echo
+            echo "- TTL minutes: $TTL_MINUTES"
+            echo "- Triggered by: ${{ github.event_name }}"
+            echo
+            echo "Response:"
+            echo "\`\`\`"
+            echo "$RESP"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ $CODE -ne 0 ]; then
+            echo "Cleanup call failed with code $CODE"
+            exit $CODE
+          fi
+
+          echo "Cleanup call done."
