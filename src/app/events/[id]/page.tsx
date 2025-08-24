@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { events } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { events, ticketTypes } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,14 @@ export default async function EventDetailPage({ params }: Props) {
     .where(eq(events.id, id))
     .limit(1);
   if (!event || !event.isActive) notFound();
+
+  // Check if there are any active ticket types for this event (paid flows)
+  const paidCandidate = await db
+    .select({ id: ticketTypes.id })
+    .from(ticketTypes)
+    .where(and(eq(ticketTypes.eventId, id), eq(ticketTypes.isActive, true)))
+    .limit(1);
+  const hasActiveTicketTypes = paidCandidate.length > 0;
 
   const formatDate = (d: Date | null) =>
     d
@@ -141,13 +149,27 @@ export default async function EventDetailPage({ params }: Props) {
                 </Badge>
               </div>
             </div>
-            <div className="shrink-0">
+            <div className="shrink-0 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              {/* Primary CTA: Free RSVP */}
               <Link href={`/events/${event.id}/register`}>
-                <Button className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500">
-                  Get Tickets
+                <Button className="w-full sm:w-auto h-12 px-6 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500">
+                  RSVP Free
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
+
+              {/* Secondary CTA: Purchase tickets if available */}
+              {hasActiveTicketTypes && (
+                <Link href={`/events/${event.id}/purchase`}>
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto h-12 px-6 border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/10 hover:border-indigo-400/50"
+                  >
+                    Buy Tickets
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

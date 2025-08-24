@@ -15,6 +15,7 @@ import {
   IconUsers,
   IconLayoutDashboard,
   IconCalendar,
+  IconCrown,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/nav-documents";
@@ -54,6 +55,26 @@ const data = {
       title: "Events",
       url: "/dashboard/events",
       icon: IconCalendar,
+    },
+    {
+      title: "Check-In",
+      url: "/organizer/check-in",
+      icon: IconCamera,
+    },
+    {
+      title: "Guest List",
+      url: "/dashboard/guest-list",
+      icon: IconCrown,
+      items: [
+        {
+          title: "Requests",
+          url: "/dashboard/guest-list",
+        },
+        {
+          title: "VIP Management",
+          url: "/dashboard/guest-list/proactive",
+        },
+      ],
     },
   ],
   navClouds: [

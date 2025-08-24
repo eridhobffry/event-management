@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Event } from "@/types/event";
 import { listCategories, inferEventCategory } from "@/lib/event-category";
 
@@ -38,6 +38,7 @@ export default function EventsClient({ events }: { events: Event[] }) {
   const [category, setCategory] = useState<string>("all");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const initializedFromUrl = useRef(false);
 
   const cities = useMemo(() => {
@@ -143,7 +144,11 @@ export default function EventsClient({ events }: { events: Event[] }) {
     if (dateRange !== "all") params.set("date", dateRange);
     else params.delete("date");
     const qs = params.toString();
-    router.replace(`/events${qs ? `?${qs}` : ""}`);
+
+    // Only update URL if we're on the events page, not on homepage
+    if (pathname === "/events") {
+      router.replace(`/events${qs ? `?${qs}` : ""}`);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, city, category, dateRange]);
 
@@ -352,11 +357,19 @@ export default function EventsClient({ events }: { events: Event[] }) {
                 </div>
               </CardContent>
 
-              <CardFooter className="pt-4">
+              <CardFooter className="pt-6 space-y-3 flex flex-col gap-3">
                 <Link href={`/events/${event.id}/register`} className="w-full">
-                  <Button className="w-full group/btn bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white border-0 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200">
-                    Register Now
+                  <Button className="w-full h-11 group/btn bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white border-0 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200">
+                    RSVP Free
                     <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                  </Button>
+                </Link>
+                <Link href={`/events/${event.id}`} className="w-full">
+                  <Button
+                    variant="outline"
+                    className="w-full h-10 text-sm text-zinc-400 border-zinc-700 hover:border-zinc-600 hover:text-zinc-300 hover:bg-zinc-800/30"
+                  >
+                    View Details & Buy Tickets
                   </Button>
                 </Link>
               </CardFooter>
