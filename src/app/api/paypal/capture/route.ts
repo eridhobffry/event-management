@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import QRCode from "qrcode";
 import { db } from "@/lib/db";
-import { orders, orderItems, tickets, ticketTypes, events } from "@/db/schema";
-import { eq, sql, count } from "drizzle-orm";
+import { orders, orderItems, tickets, events } from "@/db/schema";
+import { and, eq, sql, count } from "drizzle-orm";
 import { sendEmail } from "@/lib/email";
 import { getPayPalAccessToken, getPayPalApiBase } from "@/lib/paypal";
 
@@ -91,25 +91,41 @@ export async function POST(req: Request) {
     }
 
     const txResult = await db.transaction(async (tx) => {
-      // If already paid, or tickets already exist, do nothing
+      // Respect terminal states and only process pending orders
       const [current] = await tx
         .select({ status: orders.status })
         .from(orders)
         .where(eq(orders.id, orderRow.id))
         .limit(1);
+
       if (current?.status === "paid") return { createdCount: 0, tokens: [] as string[] };
+      if (current?.status && current.status !== "pending") {
+        // Do not override failed/canceled or other states
+        return { createdCount: 0, tokens: [] as string[] };
+      }
 
       const [{ value: existingTickets }] = await tx
         .select({ value: count() })
         .from(tickets)
         .where(eq(tickets.orderId, orderRow.id));
       if (Number(existingTickets) > 0) {
-        await tx.update(orders).set({ status: "paid", updatedAt: sql`now()` }).where(eq(orders.id, orderRow.id));
+        // Ensure status reflects payment only if still pending
+        await tx
+          .update(orders)
+          .set({ status: "paid", updatedAt: sql`now()` })
+          .where(and(eq(orders.id, orderRow.id), eq(orders.status, "pending")));
         return { createdCount: 0, tokens: [] as string[] };
       }
 
-      // Update order to paid
-      await tx.update(orders).set({ status: "paid", updatedAt: sql`now()` }).where(eq(orders.id, orderRow.id));
+      // Atomically transition to paid only if still pending
+      const updated = await tx
+        .update(orders)
+        .set({ status: "paid", updatedAt: sql`now()` })
+        .where(and(eq(orders.id, orderRow.id), eq(orders.status, "pending")))
+        .returning({ id: orders.id });
+      if (updated.length === 0) {
+        return { createdCount: 0, tokens: [] as string[] };
+      }
 
       // Load order items
       const items = await tx
@@ -139,13 +155,8 @@ export async function POST(req: Request) {
         tokens = inserted.map((r) => r.token);
       }
 
-      // Increment quantity_sold
-      for (const it of items) {
-        await tx
-          .update(ticketTypes)
-          .set({ quantitySold: sql`${ticketTypes.quantitySold} + ${it.quantity}` })
-          .where(eq(ticketTypes.id, it.ticketTypeId));
-      }
+      // Note: inventory was already reserved by incrementing quantitySold
+      // in /api/paypal/create-order. Do NOT increment again here.
       return { createdCount: tokens.length, tokens };
     });
 

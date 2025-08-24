@@ -130,13 +130,8 @@ export async function POST(req: Request) {
             tokens = inserted.map((r) => r.token);
           }
 
-          // Increment quantity_sold per ticket type
-          for (const it of items) {
-            await tx
-              .update(ticketTypes)
-              .set({ quantitySold: sql`${ticketTypes.quantitySold} + ${it.quantity}` })
-              .where(eq(ticketTypes.id, it.ticketTypeId));
-          }
+          // Note: inventory was reserved (quantitySold incremented) at intent creation
+          // time in /api/stripe/create-payment-intent. Do NOT increment again here.
           return { createdCount: tokens.length, tokens };
         });
 
@@ -204,18 +199,131 @@ export async function POST(req: Request) {
           status: paymentIntent.status,
         });
 
+        // Resolve order
         const metaOrderId = (paymentIntent.metadata?.order_id as string) || null;
-        if (metaOrderId) {
-          await db
+        const [orderRow] = metaOrderId
+          ? await db
+              .select({ id: orders.id })
+              .from(orders)
+              .where(eq(orders.id, metaOrderId))
+              .limit(1)
+          : await db
+              .select({ id: orders.id })
+              .from(orders)
+              .where(eq(orders.paymentIntentId, paymentIntent.id))
+              .limit(1);
+
+        if (!orderRow) break;
+
+        await db.transaction(async (tx) => {
+          const [current] = await tx
+            .select({ status: orders.status })
+            .from(orders)
+            .where(eq(orders.id, orderRow.id))
+            .limit(1);
+
+          // If already paid or already marked failed, do not release again
+          if (!current || current.status === "paid" || current.status === "failed") {
+            // Ensure status reflects failed for visibility
+            if (current?.status !== "failed") {
+              await tx
+                .update(orders)
+                .set({ status: "failed", updatedAt: sql`now()` })
+                .where(eq(orders.id, orderRow.id));
+            }
+            return;
+          }
+
+          // Release only when still pending and no tickets exist
+          const [{ value: existingTickets }] = await tx
+            .select({ value: count() })
+            .from(tickets)
+            .where(eq(tickets.orderId, orderRow.id));
+          if (Number(existingTickets) === 0) {
+            const items = await tx
+              .select({ ticketTypeId: orderItems.ticketTypeId, quantity: orderItems.quantity })
+              .from(orderItems)
+              .where(eq(orderItems.orderId, orderRow.id));
+
+            for (const it of items) {
+              await tx
+                .update(ticketTypes)
+                .set({ quantitySold: sql`${ticketTypes.quantitySold} - ${it.quantity}` })
+                .where(eq(ticketTypes.id, it.ticketTypeId));
+            }
+          }
+
+          await tx
             .update(orders)
             .set({ status: "failed", updatedAt: sql`now()` })
-            .where(eq(orders.id, metaOrderId));
-        } else {
-          await db
+            .where(eq(orders.id, orderRow.id));
+        });
+        break;
+      }
+      case "payment_intent.canceled": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log("stripe:webhook:payment_intent.canceled", {
+          eventId: event.id,
+          amount: paymentIntent.amount,
+          currency: paymentIntent.currency,
+          status: paymentIntent.status,
+        });
+
+        const metaOrderId = (paymentIntent.metadata?.order_id as string) || null;
+        const [orderRow] = metaOrderId
+          ? await db
+              .select({ id: orders.id })
+              .from(orders)
+              .where(eq(orders.id, metaOrderId))
+              .limit(1)
+          : await db
+              .select({ id: orders.id })
+              .from(orders)
+              .where(eq(orders.paymentIntentId, paymentIntent.id))
+              .limit(1);
+
+        if (!orderRow) break;
+
+        await db.transaction(async (tx) => {
+          const [current] = await tx
+            .select({ status: orders.status })
+            .from(orders)
+            .where(eq(orders.id, orderRow.id))
+            .limit(1);
+
+          if (!current || current.status === "paid" || current.status === "failed") {
+            if (current?.status !== "failed") {
+              await tx
+                .update(orders)
+                .set({ status: "failed", updatedAt: sql`now()` })
+                .where(eq(orders.id, orderRow.id));
+            }
+            return;
+          }
+
+          const [{ value: existingTickets }] = await tx
+            .select({ value: count() })
+            .from(tickets)
+            .where(eq(tickets.orderId, orderRow.id));
+          if (Number(existingTickets) === 0) {
+            const items = await tx
+              .select({ ticketTypeId: orderItems.ticketTypeId, quantity: orderItems.quantity })
+              .from(orderItems)
+              .where(eq(orderItems.orderId, orderRow.id));
+
+            for (const it of items) {
+              await tx
+                .update(ticketTypes)
+                .set({ quantitySold: sql`${ticketTypes.quantitySold} - ${it.quantity}` })
+                .where(eq(ticketTypes.id, it.ticketTypeId));
+            }
+          }
+
+          await tx
             .update(orders)
             .set({ status: "failed", updatedAt: sql`now()` })
-            .where(eq(orders.paymentIntentId, paymentIntent.id));
-        }
+            .where(eq(orders.id, orderRow.id));
+        });
         break;
       }
       case "checkout.session.completed": {
