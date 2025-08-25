@@ -14,15 +14,24 @@ function minutesAgo(minutes: number): Date {
 
 export async function GET(req: Request) {
   try {
-    const url = new URL(req.url);
-    const ttlStr = url.searchParams.get("ttlMinutes");
-    const ttlMinutes = Math.max(1, Number(ttlStr || process.env.RESERVATION_TTL_MINUTES || 30));
-
-    const providedSecret = url.searchParams.get("secret") || req.headers.get("x-cron-secret") || "";
-    const allowedSecret = process.env.ADMIN_CLEANUP_SECRET || process.env.CRON_SECRET || "";
-    if (allowedSecret && providedSecret !== allowedSecret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Check authentication first
+    const secret = req.headers.get("x-cron-secret");
+    if (!secret || secret !== process.env.ADMIN_CLEANUP_SECRET) {
+      return NextResponse.json(
+        { ok: false, error: "Unauthorized" },
+        { status: 401 }
+      );
     }
+
+    const { searchParams } = new URL(req.url);
+    const ttl = Number(searchParams.get("ttlMinutes") ?? 30);
+    if (!Number.isFinite(ttl) || ttl <= 0) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid ttlMinutes" },
+        { status: 400 }
+      );
+    }
+    const ttlMinutes = ttl;
 
     const cutoff = minutesAgo(ttlMinutes);
 
@@ -51,14 +60,19 @@ export async function GET(req: Request) {
         }
 
         const items = await tx
-          .select({ ticketTypeId: orderItems.ticketTypeId, quantity: orderItems.quantity })
+          .select({
+            ticketTypeId: orderItems.ticketTypeId,
+            quantity: orderItems.quantity,
+          })
           .from(orderItems)
           .where(eq(orderItems.orderId, c.id));
 
         for (const it of items) {
           await tx
             .update(ticketTypes)
-            .set({ quantitySold: sql`${ticketTypes.quantitySold} - ${it.quantity}` })
+            .set({
+              quantitySold: sql`${ticketTypes.quantitySold} - ${it.quantity}`,
+            })
             .where(eq(ticketTypes.id, it.ticketTypeId));
         }
 
@@ -71,9 +85,18 @@ export async function GET(req: Request) {
       });
     }
 
-    return NextResponse.json({ ok: true, ttlMinutes, scanned: candidates.length, released, skipped });
+    return NextResponse.json(
+      {
+        ok: true,
+        ttlMinutes,
+        scanned: candidates.length,
+        released,
+        skipped,
+      },
+      { status: 200 }
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

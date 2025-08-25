@@ -8,4 +8,10 @@ loadEnv({ path: ".env", override: false });
 
 // Unset database URL for tests to force mock database usage
 delete process.env.NEON_DATABASE_URL;
-process.env.NODE_ENV = 'test';
+
+// Set NODE_ENV for tests using defineProperty to avoid read-only error
+Object.defineProperty(process.env, "NODE_ENV", {
+  value: "test",
+  writable: true,
+  configurable: true,
+});

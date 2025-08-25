@@ -188,7 +188,7 @@ export async function PUT(request: NextRequest) {
     const guest = await db.query.proactiveGuestList.findFirst({
       where: eq(proactiveGuestList.id, guestId),
       with: {
-        eventId: true,
+        event: true,
       },
     });
 
@@ -196,9 +196,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Guest not found" }, { status: 404 });
     }
 
-    const event = await db.query.events.findFirst({
-      where: eq(events.id, guest.eventId),
-    });
+    const event = guest.event;
 
     if (!event || event.createdBy !== user.id) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });

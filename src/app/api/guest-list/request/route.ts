@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { guestListRequests, attendees, events, users } from "@/db/schema";
+import { guestListRequests, attendees, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { sendGuestListRequestNotification } from "@/lib/guest-list-notifications";
 
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const attendee = await db.query.attendees.findFirst({
       where: eq(attendees.id, attendeeId),
       with: {
-        eventId: true,
+        event: true,
       },
     });
 
@@ -32,9 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get event details
-    const event = await db.query.events.findFirst({
-      where: eq(events.id, attendee.eventId),
-    });
+    const event = attendee.event;
 
     if (!event) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
     const existingRequest = await db.query.guestListRequests.findFirst({
       where: and(
         eq(guestListRequests.attendeeId, attendeeId),
-        eq(guestListRequests.eventId, attendee.eventId)
+        eq(guestListRequests.eventId, attendee.event.id)
       ),
     });
 
@@ -62,7 +60,7 @@ export async function POST(request: NextRequest) {
     const [newRequest] = await db
       .insert(guestListRequests)
       .values({
-        eventId: attendee.eventId,
+        eventId: attendee.event.id,
         attendeeId: attendeeId,
         requesterEmail: attendee.email,
         requesterName: attendee.name,
