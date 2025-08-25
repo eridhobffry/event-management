@@ -11,7 +11,7 @@ export async function GET(req: Request) {
 
     // Parse query parameters
     const { searchParams } = new URL(req.url);
-    const ttlMinutes = Number(searchParams.get("ttlMinutes") ?? 30);
+    const ttlMinutes = Math.floor(Number(searchParams.get("ttlMinutes") ?? 30));
 
     // Validate TTL minutes
     if (isNaN(ttlMinutes) || ttlMinutes < 1) {
