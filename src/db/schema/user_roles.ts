@@ -1,5 +1,5 @@
 import { pgTable, primaryKey, integer, text } from "drizzle-orm/pg-core";
-import { users } from "./users";
+import { usersBase } from "./users";
 import { roles } from "./roles";
 
 export const userRoles = pgTable(
@@ -7,7 +7,7 @@ export const userRoles = pgTable(
   {
     userId: text("user_id")
       .notNull()
-      .references(() => users.id),
+      .references(() => usersBase.id),
     roleId: integer("role_id")
       .notNull()
       .references(() => roles.id),

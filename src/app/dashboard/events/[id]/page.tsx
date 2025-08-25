@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { count, eq, sql } from "drizzle-orm";
-import { Calendar, MapPin, Users, ArrowLeft, Edit } from "lucide-react";
+import { Calendar, MapPin, Users, ArrowLeft, Edit, Camera } from "lucide-react";
 import Link from "next/link";
 
 import { db } from "@/lib/db";
@@ -119,6 +119,16 @@ export default async function EventDetailsPage({
                         >
                           <Users className="h-4 w-4" />
                           View Attendees ({event.attendeeCount})
+                        </Button>
+                      </Link>
+                      <Link href={`/organizer/check-in`}>
+                        <Button
+                          size="lg"
+                          variant="secondary"
+                          className="gap-2 w-full sm:w-auto"
+                        >
+                          <Camera className="h-4 w-4" />
+                          Start Check-In
                         </Button>
                       </Link>
                       <Link href={`/dashboard/events/${event.id}/edit`}>

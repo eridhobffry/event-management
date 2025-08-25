@@ -6,9 +6,7 @@ test.describe("Free RSVP 2-step flow", () => {
   }) => {
     // Navigate to register page via listing CTA
     await page.goto("/events");
-    const registerLink = page
-      .getByRole("link", { name: /Register Now/i })
-      .first();
+    const registerLink = page.getByRole("link", { name: /RSVP Free/i }).first();
     await expect(registerLink).toBeVisible();
     await Promise.all([
       page.waitForURL(/\/events\/[^/]+\/register/),
@@ -76,9 +74,7 @@ test.describe("Free RSVP 2-step flow", () => {
     page,
   }) => {
     await page.goto("/events");
-    const registerLink = page
-      .getByRole("link", { name: /Register Now/i })
-      .first();
+    const registerLink = page.getByRole("link", { name: /RSVP Free/i }).first();
     await Promise.all([
       page.waitForURL(/\/events\/[^/]+\/register/),
       registerLink.click(),

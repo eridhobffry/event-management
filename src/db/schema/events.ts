@@ -6,7 +6,7 @@ import {
   boolean,
   json,
 } from "drizzle-orm/pg-core";
-import { users } from "./users";
+import { usersBase } from "./users";
 
 export const events = pgTable("events", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -16,6 +16,6 @@ export const events = pgTable("events", {
   location: text("location"),
   expectations: json("expectations").$type<string[]>().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  createdBy: text("created_by").references(() => users.id),
+  createdBy: text("created_by").references(() => usersBase.id),
   isActive: boolean("is_active").default(true),
 });

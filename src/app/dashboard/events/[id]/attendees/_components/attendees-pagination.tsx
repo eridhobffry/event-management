@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 interface AttendeesPaginationProps {
@@ -25,24 +26,38 @@ export function AttendeesPagination({
         Page {page} · Showing {showingCount} of {totalCount}
       </div>
       <div className="flex items-center gap-2">
-        <form method="get">
-          <input type="hidden" name="q" value={q} />
-          <input type="hidden" name="status" value={status} />
-          <input type="hidden" name="pageSize" value={pageSize} />
-          <input type="hidden" name="page" value={Math.max(1, page - 1)} />
-          <Button variant="outline" size="sm" disabled={page <= 1}>
+        {/* Client-side navigation to avoid full page reloads */}
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          disabled={page <= 1}
+        >
+          <Link
+            href={`?q=${encodeURIComponent(q)}&status=${status}&pageSize=${pageSize}&page=${Math.max(
+              1,
+              page - 1
+            )}`}
+            aria-disabled={page <= 1}
+          >
             Previous
-          </Button>
-        </form>
-        <form method="get">
-          <input type="hidden" name="q" value={q} />
-          <input type="hidden" name="status" value={status} />
-          <input type="hidden" name="pageSize" value={pageSize} />
-          <input type="hidden" name="page" value={page + 1} />
-          <Button variant="outline" size="sm" disabled={!pageCountHasNext}>
+          </Link>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          disabled={!pageCountHasNext}
+        >
+          <Link
+            href={`?q=${encodeURIComponent(q)}&status=${status}&pageSize=${pageSize}&page=${
+              page + 1
+            }`}
+            aria-disabled={!pageCountHasNext}
+          >
             Next
-          </Button>
-        </form>
+          </Link>
+        </Button>
       </div>
     </div>
   );

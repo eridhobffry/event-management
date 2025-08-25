@@ -1,4 +1,5 @@
 // Seed file for initial database data
+import "dotenv/config";
 import { db } from "../lib/db";
 import * as schema from "./schema";
 import { eq } from "drizzle-orm";
@@ -8,6 +9,12 @@ const main = async () => {
 
   // Clear existing data (for clean seeding)
   console.log("🧹 Clearing existing data...");
+  // Ticketing-related tables first to satisfy FK constraints
+  await db.delete(schema.orderItems);
+  await db.delete(schema.tickets);
+  await db.delete(schema.orders);
+  await db.delete(schema.ticketTypes);
+  // Core data
   await db.delete(schema.attendees);
   await db.delete(schema.events);
   await db.delete(schema.rolePermissions);
@@ -206,6 +213,48 @@ const main = async () => {
   const insertedEvents = await db
     .insert(schema.events)
     .values(sampleEvents)
+    .returning();
+
+  // Create sample paid ticket types for Stripe checkout testing
+  console.log("🎟️ Creating sample ticket types...");
+  const now = new Date();
+  const insertedTicketTypes = await db
+    .insert(schema.ticketTypes)
+    .values([
+      {
+        eventId: insertedEvents[0].id, // React Conference 2025
+        name: "General Admission",
+        priceCents: 4999,
+        currency: "usd",
+        quantityTotal: 150,
+        quantitySold: 0,
+        saleStartsAt: new Date(now.getTime() - 3600_000), // started 1h ago
+        saleEndsAt: new Date(now.getTime() + 30 * 24 * 3600_000), // +30 days
+        isActive: true,
+      },
+      {
+        eventId: insertedEvents[0].id,
+        name: "VIP",
+        priceCents: 12999,
+        currency: "usd",
+        quantityTotal: 30,
+        quantitySold: 0,
+        saleStartsAt: new Date(now.getTime() - 3600_000),
+        saleEndsAt: new Date(now.getTime() + 30 * 24 * 3600_000),
+        isActive: true,
+      },
+      {
+        eventId: insertedEvents[1].id, // Startup Pitch Night Hamburg
+        name: "Early Bird",
+        priceCents: 1500,
+        currency: "usd",
+        quantityTotal: 50,
+        quantitySold: 5,
+        saleStartsAt: new Date(now.getTime() - 24 * 3600_000), // started yesterday
+        saleEndsAt: new Date(now.getTime() + 7 * 24 * 3600_000), // +7 days
+        isActive: true,
+      },
+    ])
     .returning();
 
   // Create realistic attendees for each event
@@ -428,6 +477,7 @@ const main = async () => {
   console.log(`   • ${insertedRoles.length} roles`);
   console.log(`   • ${insertedPermissions.length} permissions`);
   console.log(`   • ${insertedEvents.length} sample events`);
+  console.log(`   • ${insertedTicketTypes.length} ticket types`);
   console.log(`   • ${sampleAttendees.length} sample attendees`);
   console.log("🔗 Ready to test attendee management features!");
 };

@@ -7,7 +7,8 @@ export const stackServerApp = new StackServerApp({
 export const stackClientApp = new StackClientApp({
   tokenStore: "nextjs-cookie",
   // Removed baseUrl to use Stack Auth's default hosted service
-  projectId: process.env.NEXT_PUBLIC_STACK_PROJECT_ID || "internal",
+  projectId:
+    process.env.NEXT_PUBLIC_STACK_PROJECT_ID || "no-project-configured",
   publishableClientKey:
-    process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY || "internal",
+    process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY || "no-key-configured",
 });

@@ -9,6 +9,34 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      PLAYWRIGHT_BASE_URL: http://localhost:3050
+      CI: true
+      NEXT_PUBLIC_STACK_PROJECT_ID: ${{ secrets.STACK_PROJECT_ID }}
+      NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: ${{ secrets.STACK_PUBLISHABLE_CLIENT_KEY }}
+      STACK_SECRET_SERVER_KEY: ${{ secrets.STACK_SECRET_SERVER_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+      PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+      PAYPAL_SECRET: ${{ secrets.PAYPAL_SECRET }}
+      PAYPAL_ENV: ${{ secrets.PAYPAL_ENV }}
+      NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+      PAYPAL_SANDBOX_BUYER_EMAIL: ${{ secrets.PAYPAL_SANDBOX_BUYER_EMAIL }}
+      PAYPAL_SANDBOX_BUYER_PASSWORD: ${{ secrets.PAYPAL_SANDBOX_BUYER_PASSWORD }}
 
     steps:
       - name: Checkout
@@ -31,20 +59,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Set default NEON_DATABASE_URL if missing (use local Postgres service)
+        run: |
+          if [ -z "${NEON_DATABASE_URL}" ]; then
+            echo "NEON_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/postgres" >> $GITHUB_ENV
+          fi
+
       - name: Lint (non-blocking)
         run: npm run lint --silent || true
 
       - name: Unit tests (Vitest)
         run: npm run test
 
-      - name: Install Playwright Browsers (Chromium only)
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
 
-      - name: E2E tests (Chromium)
-        env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3050
-          CI: true
-        run: npx playwright test --project=chromium
+      - name: Prepare database (migrate + seed)
+        run: |
+          npm run db:push --silent
+          npm run db:seed --silent
+
+      - name: E2E tests
+        run: npx playwright test
+        # Note: PayPal E2E test automatically uses mocked endpoints in CI for reliability
 
       - name: Upload Playwright report
         if: always()
