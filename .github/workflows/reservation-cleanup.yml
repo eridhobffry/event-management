@@ -2,14 +2,14 @@ name: Reservation Cleanup
 
 on:
   schedule:
-    # Every 30 minutes
-    - cron: "*/30 * * * *"
+    # Daily at 3 AM UTC
+    - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:
       ttlMinutes:
-        description: "TTL in minutes to treat reservations as stale"
+        description: "TTL in minutes to treat reservations as stale (default: 1440 = 24 hours)"
         required: false
-        default: "30"
+        default: "1440"
 
 jobs:
   call-cleanup:
@@ -19,8 +19,8 @@ jobs:
         env:
           CLEANUP_URL: https://event-management-three-tau.vercel.app/api/admin/release-stale-reservations
           ADMIN_CLEANUP_SECRET: ${{ secrets.ADMIN_CLEANUP_SECRET }}
-          # If manually triggered, allow overriding TTL via input; otherwise default to 30
-          TTL_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.ttlMinutes || vars.RESERVATION_TTL_MINUTES || '30' }}
+          # If manually triggered, allow overriding TTL via input; otherwise default to 24 hours (1440 minutes)
+          TTL_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.ttlMinutes || vars.RESERVATION_TTL_MINUTES || '1440' }}
         run: |
           set -euo pipefail
           echo "Calling: $CLEANUP_URL?ttlMinutes=${TTL_MINUTES}"
@@ -30,8 +30,8 @@ jobs:
           fi
           # Validate TTL
           if ! [[ "$TTL_MINUTES" =~ ^[0-9]+$ ]]; then
-            echo "Invalid TTL_MINUTES '$TTL_MINUTES'. Using 30."
-            TTL_MINUTES=30
+            echo "Invalid TTL_MINUTES '$TTL_MINUTES'. Using 1440 (24 hours)."
+            TTL_MINUTES=1440
           fi
 
           echo "::group::Reservation cleanup request"
