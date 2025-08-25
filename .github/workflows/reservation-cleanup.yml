@@ -17,21 +17,16 @@ jobs:
     steps:
       - name: Call cleanup endpoint
         env:
-          CLEANUP_URL: ${{ secrets.CLEANUP_URL }}
+          CLEANUP_URL: https://event-management-three-tau.vercel.app/api/admin/release-stale-reservations
           ADMIN_CLEANUP_SECRET: ${{ secrets.ADMIN_CLEANUP_SECRET }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
           # If manually triggered, allow overriding TTL via input; otherwise default to 30
           TTL_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.ttlMinutes || vars.RESERVATION_TTL_MINUTES || '30' }}
         run: |
           set -euo pipefail
-          if [ -z "${CLEANUP_URL:-}" ]; then
-            echo "CLEANUP_URL not set. Set repository secret CLEANUP_URL to your deployed endpoint, e.g. https://your.app/api/admin/release-stale-reservations";
-            exit 0
-          fi
-          SECRET="${ADMIN_CLEANUP_SECRET:-${CRON_SECRET:-}}"
-          if [ -z "$SECRET" ]; then
-            echo "No secret provided. Set ADMIN_CLEANUP_SECRET or CRON_SECRET repository secret. Skipping.";
-            exit 0
+          echo "Calling: $CLEANUP_URL?ttlMinutes=${TTL_MINUTES}"
+          if [ -z "${ADMIN_CLEANUP_SECRET:-}" ]; then
+            echo "ADMIN_CLEANUP_SECRET not set. Cannot authenticate to cleanup endpoint.";
+            exit 1
           fi
           # Validate TTL
           if ! [[ "$TTL_MINUTES" =~ ^[0-9]+$ ]]; then
@@ -46,13 +41,18 @@ jobs:
           echo "::endgroup::"
 
           set +e
-          RESP=$(curl --fail-with-body -S \
-            -H "x-cron-secret: $SECRET" \
-            "$CLEANUP_URL?ttlMinutes=$TTL_MINUTES" 2>&1)
+          RESP=$(curl -sS -i \
+            -H "x-cron-secret: ${ADMIN_CLEANUP_SECRET}" \
+            -w "\nHTTP_STATUS=%{http_code}\n" \
+            "${CLEANUP_URL}?ttlMinutes=${TTL_MINUTES}" 2>&1)
           CODE=$?
           set -e
 
           echo "$RESP"
+
+          # Extract status code
+          STATUS=$(echo "$RESP" | grep -Eo 'HTTP_STATUS=[0-9]+' | cut -d= -f2 || echo "0")
+          echo "HTTP Status: $STATUS"
 
           {
             echo "Reservation Cleanup"
@@ -66,9 +66,9 @@ jobs:
             echo "\`\`\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-          if [ $CODE -ne 0 ]; then
-            echo "Cleanup call failed with code $CODE"
-            exit $CODE
+          if [ $CODE -ne 0 ] || [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "Cleanup call failed with curl code $CODE and HTTP status $STATUS"
+            exit 1
           fi
 
           echo "Cleanup call done."
